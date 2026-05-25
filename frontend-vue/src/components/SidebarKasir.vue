@@ -8,7 +8,7 @@
           />
         </svg>
       </div>
-      <h2> Nicky Frozen </h2>
+      <h2>Nicky Frozen</h2>
       <span class="role-badge kasir">Kasir</span>
     </div>
 
@@ -486,12 +486,10 @@ onUnmounted(() => {
   color: #ef4444;
 }
 
-
 /* Scrollbar */
 .sidebar-nav::-webkit-scrollbar {
   width: 4px;
 }
-
 
 .sidebar-nav::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
