@@ -17,15 +17,21 @@
       <!-- Filter Bar -->
       <div class="filter-bar">
         <div class="search-bar">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            class="search-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            placeholder="Cari berdasarkan nama produk..." 
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cari berdasarkan nama produk..."
             class="search-input"
-          >
+          />
         </div>
         <select v-model="filterStatus" class="filter-select">
           <option value="all">Semua Status</option>
@@ -45,15 +51,23 @@
       <div class="card">
         <div class="card-header">
           <h3>Transaksi</h3>
-          <span class="total-count">{{ filteredTransactions.length }} transaksi</span>
+          <span class="total-count"
+            >{{ filteredTransactions.length }} transaksi</span
+          >
         </div>
-        
+
         <div class="transactions-list">
-          <div v-for="(transaction, idx) in paginatedTransactions" :key="transaction.id" class="transaction-item">
+          <div
+            v-for="(transaction, idx) in paginatedTransactions"
+            :key="transaction.id"
+            class="transaction-item"
+          >
             <div class="transaction-header">
               <div class="transaction-info">
                 <span class="transaction-id">#{{ transaction.id }}</span>
-                <span class="transaction-date">{{ formatDate(transaction.created_at) }}</span>
+                <span class="transaction-date">{{
+                  formatDate(transaction.created_at)
+                }}</span>
               </div>
               <div class="transaction-status">
                 <span class="status-badge" :class="transaction.status">
@@ -63,7 +77,11 @@
             </div>
             <div class="transaction-body">
               <div class="transaction-items">
-                <div v-for="item in transaction.items" :key="item.id" class="transaction-item-detail">
+                <div
+                  v-for="item in transaction.items"
+                  :key="item.id"
+                  class="transaction-item-detail"
+                >
                   <span>{{ item.name }} x{{ item.quantity }}</span>
                   <span>Rp {{ formatNumber(item.price * item.quantity) }}</span>
                 </div>
@@ -83,19 +101,40 @@
                 </div>
               </div>
             </div>
-            <div class="transaction-footer" v-if="transaction.status !== 'synced'">
-              <button class="btn-retry" @click="retrySync(transaction)" :disabled="!isOnline">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <div
+              class="transaction-footer"
+              v-if="transaction.status !== 'synced'"
+            >
+              <button
+                class="btn-retry"
+                @click="retrySync(transaction)"
+                :disabled="!isOnline"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
                 Sync Ulang
               </button>
             </div>
           </div>
-          
+
           <div v-if="filteredTransactions.length === 0" class="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
             <p>Belum ada transaksi</p>
           </div>
@@ -103,9 +142,23 @@
 
         <!-- Pagination -->
         <div class="pagination" v-if="totalPages > 1">
-          <button class="page-btn" @click="prevPage" :disabled="currentPage === 1">&laquo; Sebelumnya</button>
-          <span class="page-info">Halaman {{ currentPage }} dari {{ totalPages }}</span>
-          <button class="page-btn" @click="nextPage" :disabled="currentPage === totalPages">Selanjutnya &raquo;</button>
+          <button
+            class="page-btn"
+            @click="prevPage"
+            :disabled="currentPage === 1"
+          >
+            &laquo; Sebelumnya
+          </button>
+          <span class="page-info"
+            >Halaman {{ currentPage }} dari {{ totalPages }}</span
+          >
+          <button
+            class="page-btn"
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+          >
+            Selanjutnya &raquo;
+          </button>
         </div>
       </div>
     </main>
@@ -113,180 +166,207 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import SidebarKasir from '../../components/SidebarKasir.vue'
+import { ref, computed, onMounted, watch } from "vue";
+import SidebarKasir from "../../components/SidebarKasir.vue";
 
 // State
-const searchQuery = ref('')
-const filterStatus = ref('all')
-const sortBy = ref('newest')
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
-const isOnline = ref(navigator.onLine)
+const searchQuery = ref("");
+const filterStatus = ref("all");
+const sortBy = ref("newest");
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const isOnline = ref(navigator.onLine);
 
 // Data
-const cashierName = ref('Kasir Cabang Utama')
-const cashierEmail = ref('kasir@nicksfrozen.com') // akan diambil dari localStorage
+const cashierName = ref("Kasir Cabang Utama");
+const cashierEmail = ref("kasir@nicksfrozen.com"); // akan diambil dari localStorage
 
 // Ambil transaksi dari localStorage
 const loadTransactions = () => {
-  const allTransactions = JSON.parse(localStorage.getItem('transactions') || '[]')
-  const pending = JSON.parse(localStorage.getItem('pending_transactions') || '[]')
+  const allTransactions = JSON.parse(
+    localStorage.getItem("transactions") || "[]",
+  );
+  const pending = JSON.parse(
+    localStorage.getItem("pending_transactions") || "[]",
+  );
   // Gabungkan transaksi online (sudah tersimpan di server) dan pending (offline)
   // Untuk demo, kita asumsikan transaksi yang sudah tersimpan di 'transactions' memiliki status 'synced'
   // Dan yang di 'pending_transactions' memiliki status 'pending' atau 'failed'
-  const synced = allTransactions.map(t => ({ ...t, status: 'synced' }))
-  const pendingList = pending.map(p => ({ ...p, status: p.status || 'pending' }))
-  return [...synced, ...pendingList]
-}
+  const synced = allTransactions.map((t) => ({ ...t, status: "synced" }));
+  const pendingList = pending.map((p) => ({
+    ...p,
+    status: p.status || "pending",
+  }));
+  return [...synced, ...pendingList];
+};
 
-const allTransactions = ref([])
+const allTransactions = ref([]);
 
 // Computed
-const cashierInitial = computed(() => cashierName.value.charAt(0))
+const cashierInitial = computed(() => cashierName.value.charAt(0));
 
 const filteredTransactions = computed(() => {
-  let result = [...allTransactions.value]
-  
+  let result = [...allTransactions.value];
+
   // Filter berdasarkan kasir yang login (gunakan email atau nama)
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-  const currentEmail = currentUser.email || cashierEmail.value
-  result = result.filter(t => t.cashier_email === currentEmail)
-  
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentEmail = currentUser.email || cashierEmail.value;
+  result = result.filter((t) => t.cashier_email === currentEmail);
+
   // Filter status
-  if (filterStatus.value !== 'all') {
-    result = result.filter(t => t.status === filterStatus.value)
+  if (filterStatus.value !== "all") {
+    result = result.filter((t) => t.status === filterStatus.value);
   }
-  
+
   // Filter search (cari di nama produk)
   if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
-    result = result.filter(t => 
-      t.items.some(item => item.name.toLowerCase().includes(q))
-    )
+    const q = searchQuery.value.toLowerCase();
+    result = result.filter((t) =>
+      t.items.some((item) => item.name.toLowerCase().includes(q)),
+    );
   }
-  
+
   // Sorting
   switch (sortBy.value) {
-    case 'newest':
-      result.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
-      break
-    case 'oldest':
-      result.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
-      break
-    case 'highest':
-      result.sort((a,b) => b.total - a.total)
-      break
-    case 'lowest':
-      result.sort((a,b) => a.total - b.total)
-      break
+    case "newest":
+      result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      break;
+    case "oldest":
+      result.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      break;
+    case "highest":
+      result.sort((a, b) => b.total - a.total);
+      break;
+    case "lowest":
+      result.sort((a, b) => a.total - b.total);
+      break;
   }
-  
-  return result
-})
 
-const totalPages = computed(() => Math.ceil(filteredTransactions.value.length / itemsPerPage.value))
+  return result;
+});
+
+const totalPages = computed(() =>
+  Math.ceil(filteredTransactions.value.length / itemsPerPage.value),
+);
 const paginatedTransactions = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredTransactions.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredTransactions.value.slice(start, end);
+});
 
 // Methods
-const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num)
+const formatNumber = (num) => new Intl.NumberFormat("id-ID").format(num);
 const formatDate = (dateStr) => {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-}
+  const d = new Date(dateStr);
+  return (
+    d.toLocaleDateString("id-ID") +
+    " " +
+    d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+  );
+};
 
 const getStatusText = (status) => {
   switch (status) {
-    case 'synced': return 'Tersinkronisasi'
-    case 'pending': return 'Menunggu Sync'
-    case 'failed': return 'Gagal Sync'
-    default: return 'Unknown'
+    case "synced":
+      return "Tersinkronisasi";
+    case "pending":
+      return "Menunggu Sync";
+    case "failed":
+      return "Gagal Sync";
+    default:
+      return "Unknown";
   }
-}
+};
 
 const retrySync = async (transaction) => {
   if (!isOnline.value) {
-    alert('Tidak ada koneksi internet. Silakan coba lagi nanti.')
-    return
+    alert("Tidak ada koneksi internet. Silakan coba lagi nanti.");
+    return;
   }
-  
+
   // Update status menjadi syncing
-  transaction.status = 'pending'
+  transaction.status = "pending";
   // Simulasi sync ke server
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     // Hapus dari pending list, tambahkan ke synced
-    const pendingList = JSON.parse(localStorage.getItem('pending_transactions') || '[]')
-    const updatedList = pendingList.filter(p => p.id !== transaction.id)
-    localStorage.setItem('pending_transactions', JSON.stringify(updatedList))
-    
-    // Tambahkan ke transaksi utama (synced)
-    const syncedList = JSON.parse(localStorage.getItem('transactions') || '[]')
-    syncedList.push({ ...transaction, status: 'synced' })
-    localStorage.setItem('transactions', JSON.stringify(syncedList))
-    
-    // Refresh data
-    allTransactions.value = loadTransactions()
-  } catch (error) {
-    transaction.status = 'failed'
-    // Update di localStorage
-    const pendingList = JSON.parse(localStorage.getItem('pending_transactions') || '[]')
-    const idx = pendingList.findIndex(p => p.id === transaction.id)
-    if (idx !== -1) pendingList[idx].status = 'failed'
-    localStorage.setItem('pending_transactions', JSON.stringify(pendingList))
-    allTransactions.value = loadTransactions()
-  }
-}
+    const pendingList = JSON.parse(
+      localStorage.getItem("pending_transactions") || "[]",
+    );
+    const updatedList = pendingList.filter((p) => p.id !== transaction.id);
+    localStorage.setItem("pending_transactions", JSON.stringify(updatedList));
 
-const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
-const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+    // Tambahkan ke transaksi utama (synced)
+    const syncedList = JSON.parse(localStorage.getItem("transactions") || "[]");
+    syncedList.push({ ...transaction, status: "synced" });
+    localStorage.setItem("transactions", JSON.stringify(syncedList));
+
+    // Refresh data
+    allTransactions.value = loadTransactions();
+  } catch (error) {
+    transaction.status = "failed";
+    // Update di localStorage
+    const pendingList = JSON.parse(
+      localStorage.getItem("pending_transactions") || "[]",
+    );
+    const idx = pendingList.findIndex((p) => p.id === transaction.id);
+    if (idx !== -1) pendingList[idx].status = "failed";
+    localStorage.setItem("pending_transactions", JSON.stringify(pendingList));
+    allTransactions.value = loadTransactions();
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
 
 // Reset page saat filter berubah
 watch([searchQuery, filterStatus, sortBy], () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // Ambil data saat komponen dimuat
 onMounted(() => {
-  allTransactions.value = loadTransactions()
-  
+  allTransactions.value = loadTransactions();
+
   // Simulasi data dummy jika belum ada (untuk demo)
   if (allTransactions.value.length === 0) {
     const dummyTransactions = [
       {
         id: 1001,
-        cashier_email: 'kasir@nicksfrozen.com',
-        items: [{ id: 1, name: 'Nugget Ayam', price: 35000, quantity: 2 }],
+        cashier_email: "kasir@nicksfrozen.com",
+        items: [{ id: 1, name: "Nugget Ayam", price: 35000, quantity: 2 }],
         total: 70000,
         payment: 100000,
         change: 30000,
         created_at: new Date().toISOString(),
-        status: 'synced'
+        status: "synced",
       },
       {
         id: 1002,
-        cashier_email: 'kasir@nicksfrozen.com',
-        items: [{ id: 2, name: 'Sosis Solo', price: 28000, quantity: 1 }],
+        cashier_email: "kasir@nicksfrozen.com",
+        items: [{ id: 2, name: "Sosis Solo", price: 28000, quantity: 1 }],
         total: 28000,
         payment: 50000,
         change: 22000,
         created_at: new Date(Date.now() - 86400000).toISOString(),
-        status: 'synced'
-      }
-    ]
-    localStorage.setItem('transactions', JSON.stringify(dummyTransactions))
-    allTransactions.value = loadTransactions()
+        status: "synced",
+      },
+    ];
+    localStorage.setItem("transactions", JSON.stringify(dummyTransactions));
+    allTransactions.value = loadTransactions();
   }
-})
+});
 
 // Update online status
-const updateOnlineStatus = () => { isOnline.value = navigator.onLine }
-window.addEventListener('online', updateOnlineStatus)
-window.addEventListener('offline', updateOnlineStatus)
+const updateOnlineStatus = () => {
+  isOnline.value = navigator.onLine;
+};
+window.addEventListener("online", updateOnlineStatus);
+window.addEventListener("offline", updateOnlineStatus);
 </script>
 
 <style scoped>
@@ -310,12 +390,12 @@ window.addEventListener('offline', updateOnlineStatus)
   background: white;
   padding: 1rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .page-title h1 {
   font-size: 1.25rem;
-  color: #1F3864;
+  color: #1f3864;
   margin-bottom: 0.25rem;
 }
 
@@ -327,7 +407,7 @@ window.addEventListener('offline', updateOnlineStatus)
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: #2E75B6;
+  background: #2e75b6;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -345,7 +425,7 @@ window.addEventListener('offline', updateOnlineStatus)
   gap: 1rem;
   flex-wrap: wrap;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .search-bar {
@@ -382,7 +462,7 @@ window.addEventListener('offline', updateOnlineStatus)
 .card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -417,7 +497,7 @@ window.addEventListener('offline', updateOnlineStatus)
 }
 
 .transaction-item:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .transaction-header {
@@ -437,7 +517,7 @@ window.addEventListener('offline', updateOnlineStatus)
 
 .transaction-id {
   font-weight: 600;
-  color: #1F3864;
+  color: #1f3864;
 }
 
 .transaction-date {
