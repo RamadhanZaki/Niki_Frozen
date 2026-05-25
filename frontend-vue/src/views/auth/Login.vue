@@ -16,7 +16,6 @@
 
       <!-- Form Body -->
       <div class="login-body">
-        
         <!-- Connection Status -->
         <div v-if="!isOnline" class="alert alert-warning">
           <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -35,7 +34,6 @@
 
         <!-- Form -->
         <form @submit.prevent="handleLogin">
-          
           <!-- Email Field -->
           <div class="form-group">
             <label class="form-label">Email</label>
@@ -85,7 +83,7 @@
             <p v-if="errors.password" class="error-text">{{ errors.password }}</p>
           </div>
 
-          <!-- Remember Me & Forgot -->
+          <!-- Remember Me -->
           <div class="flex-between">
             <label class="checkbox-label">
               <input type="checkbox" v-model="rememberMe" class="checkbox">
@@ -133,7 +131,6 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// State
 const isLoading = ref(false)
 const showPassword = ref(false)
 const rememberMe = ref(false)
@@ -150,7 +147,6 @@ const errors = reactive({
   password: ''
 })
 
-// Demo fill functions
 const fillDemoOwner = () => {
   form.email = 'owner@nicksfrozen.com'
   form.password = 'password'
@@ -161,7 +157,6 @@ const fillDemoKasir = () => {
   form.password = 'password'
 }
 
-// Validate form
 const validateForm = () => {
   let isValid = true
   errors.email = ''
@@ -183,7 +178,6 @@ const validateForm = () => {
   return isValid
 }
 
-// Handle login
 const handleLogin = async () => {
   if (!validateForm()) return
 
@@ -274,7 +268,6 @@ onUnmounted(() => {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* Header */
 .login-header {
   background: #1F3864;
   padding: 1.5rem;
@@ -315,12 +308,10 @@ onUnmounted(() => {
   margin-top: 0.25rem;
 }
 
-/* Body */
 .login-body {
   padding: 1.5rem;
 }
 
-/* Alerts */
 .alert {
   margin-bottom: 1rem;
   padding: 0.625rem 0.75rem;
@@ -356,7 +347,6 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-/* Form */
 .form-group {
   margin-bottom: 1rem;
 }
@@ -433,7 +423,6 @@ onUnmounted(() => {
   margin-top: 0.25rem;
 }
 
-/* Remember me */
 .flex-between {
   display: flex;
   align-items: center;
@@ -470,7 +459,6 @@ onUnmounted(() => {
   text-decoration: underline;
 }
 
-/* Login Button */
 .btn-login {
   width: 100%;
   background: #1F3864;
@@ -511,7 +499,6 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Demo Section */
 .demo-section {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
@@ -560,7 +547,6 @@ onUnmounted(() => {
   font-size: 0.65rem;
 }
 
-/* Footer */
 .login-footer {
   background: #f9fafb;
   padding: 0.75rem 1.5rem;
