@@ -17,15 +17,21 @@
       <!-- Filters -->
       <div class="filters-bar">
         <div class="search-bar">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            class="search-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            placeholder="Cari produk..." 
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cari produk..."
             class="search-input"
-          >
+          />
         </div>
         <select v-model="categoryFilter" class="filter-select">
           <option value="all">Semua Kategori</option>
@@ -58,28 +64,41 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(product, index) in paginatedProducts" :key="product.id">
+              <tr
+                v-for="(product, index) in paginatedProducts"
+                :key="product.id"
+              >
                 <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
                 <td class="product-name">{{ product.name }}</td>
                 <td>{{ product.category }}</td>
                 <td class="price">Rp {{ formatNumber(product.price) }}</td>
                 <td>
-                  <span :class="getStockClass(product.stock)">{{ product.stock }}</span>
+                  <span :class="getStockClass(product.stock)">{{
+                    product.stock
+                  }}</span>
                 </td>
                 <td>
                   {{ formatDate(product.expired_date) }}
-                  <span class="days-left" :class="getDaysLeftClass(product.daysLeft)">
+                  <span
+                    class="days-left"
+                    :class="getDaysLeftClass(product.daysLeft)"
+                  >
                     ({{ product.daysLeft }} hari)
                   </span>
                 </td>
                 <td>
-                  <span class="status-badge" :class="getProductStatusClass(product)">
+                  <span
+                    class="status-badge"
+                    :class="getProductStatusClass(product)"
+                  >
                     {{ getProductStatusText(product) }}
                   </span>
                 </td>
               </tr>
               <tr v-if="filteredProducts.length === 0">
-                <td colspan="7" class="empty-row">Tidak ada produk yang ditemukan</td>
+                <td colspan="7" class="empty-row">
+                  Tidak ada produk yang ditemukan
+                </td>
               </tr>
             </tbody>
           </table>
@@ -87,9 +106,23 @@
 
         <!-- Pagination -->
         <div class="pagination" v-if="totalPages > 1">
-          <button class="page-btn" @click="prevPage" :disabled="currentPage === 1">&laquo; Sebelumnya</button>
-          <span class="page-info">Halaman {{ currentPage }} dari {{ totalPages }}</span>
-          <button class="page-btn" @click="nextPage" :disabled="currentPage === totalPages">Selanjutnya &raquo;</button>
+          <button
+            class="page-btn"
+            @click="prevPage"
+            :disabled="currentPage === 1"
+          >
+            &laquo; Sebelumnya
+          </button>
+          <span class="page-info"
+            >Halaman {{ currentPage }} dari {{ totalPages }}</span
+          >
+          <button
+            class="page-btn"
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+          >
+            Selanjutnya &raquo;
+          </button>
         </div>
       </div>
     </main>
@@ -97,126 +130,191 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import SidebarKasir from '../../components/SidebarKasir.vue'
+import { ref, computed, watch } from "vue";
+import SidebarKasir from "../../components/SidebarKasir.vue";
 
 // State
-const searchQuery = ref('')
-const categoryFilter = ref('all')
-const statusFilter = ref('all')
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
-const cashierName = ref('Kasir Cabang Utama')
+const searchQuery = ref("");
+const categoryFilter = ref("all");
+const statusFilter = ref("all");
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const cashierName = ref("Kasir Cabang Utama");
 
 // Products data (sama dengan data di POS, hanya untuk tampilan)
 const products = ref([
-  { id: 1, name: 'Nugget Ayam', category: 'Frozen', price: 35000, stock: 45, expired_date: '2025-12-31' },
-  { id: 2, name: 'Sosis Solo', category: 'Frozen', price: 28000, stock: 8, expired_date: '2025-11-30' },
-  { id: 3, name: 'Roti Bakar', category: 'Snack', price: 15000, stock: 3, expired_date: '2025-10-15' },
-  { id: 4, name: 'Kentang Goreng', category: 'Frozen', price: 20000, stock: 28, expired_date: '2025-12-20' },
-  { id: 5, name: 'Es Krim', category: 'Dessert', price: 12000, stock: 52, expired_date: '2026-01-15' },
-  { id: 6, name: 'Pizza Frozen', category: 'Frozen', price: 55000, stock: 8, expired_date: '2025-12-31' },
-  { id: 7, name: 'Dimsum', category: 'Frozen', price: 25000, stock: 15, expired_date: '2025-12-10' },
-  { id: 8, name: 'Cireng', category: 'Snack', price: 10000, stock: 40, expired_date: '2026-01-01' }
-])
+  {
+    id: 1,
+    name: "Nugget Ayam",
+    category: "Frozen",
+    price: 35000,
+    stock: 45,
+    expired_date: "2025-12-31",
+  },
+  {
+    id: 2,
+    name: "Sosis Solo",
+    category: "Frozen",
+    price: 28000,
+    stock: 8,
+    expired_date: "2025-11-30",
+  },
+  {
+    id: 3,
+    name: "Roti Bakar",
+    category: "Snack",
+    price: 15000,
+    stock: 3,
+    expired_date: "2025-10-15",
+  },
+  {
+    id: 4,
+    name: "Kentang Goreng",
+    category: "Frozen",
+    price: 20000,
+    stock: 28,
+    expired_date: "2025-12-20",
+  },
+  {
+    id: 5,
+    name: "Es Krim",
+    category: "Dessert",
+    price: 12000,
+    stock: 52,
+    expired_date: "2026-01-15",
+  },
+  {
+    id: 6,
+    name: "Pizza Frozen",
+    category: "Frozen",
+    price: 55000,
+    stock: 8,
+    expired_date: "2025-12-31",
+  },
+  {
+    id: 7,
+    name: "Dimsum",
+    category: "Frozen",
+    price: 25000,
+    stock: 15,
+    expired_date: "2025-12-10",
+  },
+  {
+    id: 8,
+    name: "Cireng",
+    category: "Snack",
+    price: 10000,
+    stock: 40,
+    expired_date: "2026-01-01",
+  },
+]);
 
 // Helpers
 const addDaysLeft = (product) => {
-  const today = new Date()
-  const expiredDate = new Date(product.expired_date)
-  return Math.ceil((expiredDate - today) / (1000 * 60 * 60 * 24))
-}
+  const today = new Date();
+  const expiredDate = new Date(product.expired_date);
+  return Math.ceil((expiredDate - today) / (1000 * 60 * 60 * 24));
+};
 
 // Computed
-const cashierInitial = computed(() => cashierName.value.charAt(0))
+const cashierInitial = computed(() => cashierName.value.charAt(0));
 
 const productsWithStatus = computed(() => {
-  return products.value.map(p => ({
+  return products.value.map((p) => ({
     ...p,
     daysLeft: addDaysLeft(p),
     isLowStock: p.stock > 0 && p.stock <= 10,
     isExpiring: addDaysLeft(p) > 0 && addDaysLeft(p) <= 7,
-    isExpired: addDaysLeft(p) <= 0 && p.stock > 0
-  }))
-})
+    isExpired: addDaysLeft(p) <= 0 && p.stock > 0,
+  }));
+});
 
 const filteredProducts = computed(() => {
-  let result = productsWithStatus.value
+  let result = productsWithStatus.value;
 
   if (searchQuery.value) {
-    result = result.filter(p => 
-      p.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
+    result = result.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
+    );
   }
-  if (categoryFilter.value !== 'all') {
-    result = result.filter(p => p.category === categoryFilter.value)
+  if (categoryFilter.value !== "all") {
+    result = result.filter((p) => p.category === categoryFilter.value);
   }
-  if (statusFilter.value !== 'all') {
+  if (statusFilter.value !== "all") {
     switch (statusFilter.value) {
-      case 'low_stock':
-        result = result.filter(p => p.isLowStock && !p.isExpired)
-        break
-      case 'expiring':
-        result = result.filter(p => p.isExpiring && !p.isExpired)
-        break
-      case 'expired':
-        result = result.filter(p => p.isExpired)
-        break
-      case 'normal':
-        result = result.filter(p => !p.isLowStock && !p.isExpiring && !p.isExpired && p.stock > 0)
-        break
+      case "low_stock":
+        result = result.filter((p) => p.isLowStock && !p.isExpired);
+        break;
+      case "expiring":
+        result = result.filter((p) => p.isExpiring && !p.isExpired);
+        break;
+      case "expired":
+        result = result.filter((p) => p.isExpired);
+        break;
+      case "normal":
+        result = result.filter(
+          (p) => !p.isLowStock && !p.isExpiring && !p.isExpired && p.stock > 0,
+        );
+        break;
     }
   }
-  return result
-})
+  return result;
+});
 
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value))
+const totalPages = computed(() =>
+  Math.ceil(filteredProducts.value.length / itemsPerPage.value),
+);
 const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredProducts.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredProducts.value.slice(start, end);
+});
 
 // Methods
-const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num)
-const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID') : '-'
+const formatNumber = (num) => new Intl.NumberFormat("id-ID").format(num);
+const formatDate = (date) =>
+  date ? new Date(date).toLocaleDateString("id-ID") : "-";
 
 const getStockClass = (stock) => {
-  if (stock === 0) return 'stock-zero'
-  if (stock <= 5) return 'stock-critical'
-  if (stock <= 10) return 'stock-low'
-  return 'stock-normal'
-}
+  if (stock === 0) return "stock-zero";
+  if (stock <= 5) return "stock-critical";
+  if (stock <= 10) return "stock-low";
+  return "stock-normal";
+};
 
 const getDaysLeftClass = (days) => {
-  if (days <= 0) return 'expired'
-  if (days <= 3) return 'critical'
-  if (days <= 7) return 'warning'
-  return 'normal'
-}
+  if (days <= 0) return "expired";
+  if (days <= 3) return "critical";
+  if (days <= 7) return "warning";
+  return "normal";
+};
 
 const getProductStatusClass = (p) => {
-  if (p.isExpired) return 'status-expired'
-  if (p.isExpiring) return 'status-expiring'
-  if (p.stock === 0) return 'status-out'
-  if (p.isLowStock) return 'status-low'
-  return 'status-normal'
-}
+  if (p.isExpired) return "status-expired";
+  if (p.isExpiring) return "status-expiring";
+  if (p.stock === 0) return "status-out";
+  if (p.isLowStock) return "status-low";
+  return "status-normal";
+};
 
 const getProductStatusText = (p) => {
-  if (p.isExpired) return 'Expired'
-  if (p.isExpiring) return 'Akan Expired'
-  if (p.stock === 0) return 'Habis'
-  if (p.isLowStock) return 'Stok Menipis'
-  return 'Normal'
-}
+  if (p.isExpired) return "Expired";
+  if (p.isExpiring) return "Akan Expired";
+  if (p.stock === 0) return "Habis";
+  if (p.isLowStock) return "Stok Menipis";
+  return "Normal";
+};
 
-const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
-const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
 
 watch([searchQuery, categoryFilter, statusFilter], () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 </script>
 
 <style scoped>
@@ -240,12 +338,12 @@ watch([searchQuery, categoryFilter, statusFilter], () => {
   background: white;
   padding: 1rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .page-title h1 {
   font-size: 1.25rem;
-  color: #1F3864;
+  color: #1f3864;
   margin-bottom: 0.25rem;
 }
 
@@ -257,7 +355,7 @@ watch([searchQuery, categoryFilter, statusFilter], () => {
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: #2E75B6;
+  background: #2e75b6;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -307,7 +405,7 @@ watch([searchQuery, categoryFilter, statusFilter], () => {
 .card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
