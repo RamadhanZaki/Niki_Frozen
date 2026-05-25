@@ -10,9 +10,12 @@
           <p>Transaksi yang disimpan secara lokal menunggu dikirim ke server</p>
         </div>
         <div class="top-bar-right">
-          <div class="connection-status" :class="{ online: isOnline, offline: !isOnline }">
+          <div
+            class="connection-status"
+            :class="{ online: isOnline, offline: !isOnline }"
+          >
             <span class="status-dot"></span>
-            <span>{{ isOnline ? 'Online' : 'Offline' }}</span>
+            <span>{{ isOnline ? "Online" : "Offline" }}</span>
           </div>
           <div class="user-avatar">
             <span>{{ cashierInitial }}</span>
@@ -44,19 +47,37 @@
 
       <!-- Actions Bar -->
       <div class="actions-bar">
-        <button 
-          class="btn-sync-all" 
-          @click="syncAll" 
+        <button
+          class="btn-sync-all"
+          @click="syncAll"
           :disabled="!isOnline || pendingTransactions.length === 0 || isSyncing"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
           </svg>
-          <span>{{ isSyncing ? 'Menyinkronkan...' : 'Sync Semua' }}</span>
+          <span>{{ isSyncing ? "Menyinkronkan..." : "Sync Semua" }}</span>
         </button>
-        <button class="btn-clear-all" @click="clearAll" :disabled="pendingTransactions.length === 0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        <button
+          class="btn-clear-all"
+          @click="clearAll"
+          :disabled="pendingTransactions.length === 0"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
           </svg>
           <span>Hapus Semua</span>
         </button>
@@ -66,25 +87,41 @@
       <div class="card">
         <div class="card-header">
           <h3>Daftar Transaksi Pending</h3>
-          <span class="total-count">{{ pendingTransactions.length }} transaksi</span>
+          <span class="total-count"
+            >{{ pendingTransactions.length }} transaksi</span
+          >
         </div>
-        
+
         <div class="pending-list">
-          <div v-for="(transaction, idx) in paginatedTransactions" :key="transaction.id" class="pending-item">
+          <div
+            v-for="(transaction, idx) in paginatedTransactions"
+            :key="transaction.id"
+            class="pending-item"
+          >
             <div class="pending-header">
               <div class="pending-info">
                 <span class="pending-id">#{{ transaction.id }}</span>
-                <span class="pending-date">{{ formatDate(transaction.created_at) }}</span>
+                <span class="pending-date">{{
+                  formatDate(transaction.created_at)
+                }}</span>
               </div>
               <div class="pending-status">
                 <span class="status-badge" :class="transaction.status">
-                  {{ transaction.status === 'pending' ? 'Menunggu Sync' : 'Gagal Sync' }}
+                  {{
+                    transaction.status === "pending"
+                      ? "Menunggu Sync"
+                      : "Gagal Sync"
+                  }}
                 </span>
               </div>
             </div>
             <div class="pending-body">
               <div class="pending-items">
-                <div v-for="item in transaction.items" :key="item.id" class="pending-item-detail">
+                <div
+                  v-for="item in transaction.items"
+                  :key="item.id"
+                  class="pending-item-detail"
+                >
                   <span>{{ item.name }} x{{ item.quantity }}</span>
                   <span>Rp {{ formatNumber(item.price * item.quantity) }}</span>
                 </div>
@@ -105,23 +142,49 @@
               </div>
             </div>
             <div class="pending-footer">
-              <button class="btn-retry" @click="retrySync(transaction)" :disabled="!isOnline">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <button
+                class="btn-retry"
+                @click="retrySync(transaction)"
+                :disabled="!isOnline"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
                 Sync Ulang
               </button>
-              <button class="btn-delete" @click="deleteTransaction(transaction)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <button
+                class="btn-delete"
+                @click="deleteTransaction(transaction)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
                 Hapus
               </button>
             </div>
           </div>
-          
+
           <div v-if="pendingTransactions.length === 0" class="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
             <p>Tidak ada transaksi pending</p>
@@ -131,15 +194,33 @@
 
         <!-- Pagination -->
         <div class="pagination" v-if="totalPages > 1">
-          <button class="page-btn" @click="prevPage" :disabled="currentPage === 1">&laquo; Sebelumnya</button>
-          <span class="page-info">Halaman {{ currentPage }} dari {{ totalPages }}</span>
-          <button class="page-btn" @click="nextPage" :disabled="currentPage === totalPages">Selanjutnya &raquo;</button>
+          <button
+            class="page-btn"
+            @click="prevPage"
+            :disabled="currentPage === 1"
+          >
+            &laquo; Sebelumnya
+          </button>
+          <span class="page-info"
+            >Halaman {{ currentPage }} dari {{ totalPages }}</span
+          >
+          <button
+            class="page-btn"
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+          >
+            Selanjutnya &raquo;
+          </button>
         </div>
       </div>
     </main>
 
     <!-- Konfirmasi Hapus Modal -->
-    <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
+    <div
+      v-if="showDeleteModal"
+      class="modal-overlay"
+      @click.self="showDeleteModal = false"
+    >
       <div class="modal small-modal">
         <div class="modal-header">
           <h3>Hapus Transaksi Pending</h3>
@@ -147,29 +228,48 @@
         </div>
         <div class="modal-body">
           <p>Apakah Anda yakin ingin menghapus transaksi ini?</p>
-          <p class="warning-text">Data yang dihapus tidak dapat dikembalikan!</p>
+          <p class="warning-text">
+            Data yang dihapus tidak dapat dikembalikan!
+          </p>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="showDeleteModal = false">Batal</button>
-          <button class="btn-danger" @click="confirmDeleteTransaction">Hapus</button>
+          <button class="btn-secondary" @click="showDeleteModal = false">
+            Batal
+          </button>
+          <button class="btn-danger" @click="confirmDeleteTransaction">
+            Hapus
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Konfirmasi Hapus Semua Modal -->
-    <div v-if="showClearAllModal" class="modal-overlay" @click.self="showClearAllModal = false">
+    <div
+      v-if="showClearAllModal"
+      class="modal-overlay"
+      @click.self="showClearAllModal = false"
+    >
       <div class="modal small-modal">
         <div class="modal-header">
           <h3>Hapus Semua Transaksi Pending</h3>
-          <button class="close-btn" @click="showClearAllModal = false">✕</button>
+          <button class="close-btn" @click="showClearAllModal = false">
+            ✕
+          </button>
         </div>
         <div class="modal-body">
-          <p>Apakah Anda yakin ingin menghapus <strong>semua</strong> transaksi pending?</p>
+          <p>
+            Apakah Anda yakin ingin menghapus <strong>semua</strong> transaksi
+            pending?
+          </p>
           <p class="warning-text">Tindakan ini tidak dapat dibatalkan!</p>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="showClearAllModal = false">Batal</button>
-          <button class="btn-danger" @click="confirmClearAll">Hapus Semua</button>
+          <button class="btn-secondary" @click="showClearAllModal = false">
+            Batal
+          </button>
+          <button class="btn-danger" @click="confirmClearAll">
+            Hapus Semua
+          </button>
         </div>
       </div>
     </div>
@@ -183,59 +283,68 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import SidebarKasir from '../../components/SidebarKasir.vue'
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import SidebarKasir from "../../components/SidebarKasir.vue";
 
 // State
-const isOnline = ref(navigator.onLine)
-const isSyncing = ref(false)
-const pendingTransactions = ref([])
-const currentPage = ref(1)
-const itemsPerPage = ref(5)
-const showDeleteModal = ref(false)
-const showClearAllModal = ref(false)
-const selectedTransaction = ref(null)
-const showAlert = ref(false)
-const alertMessage = ref('')
-const alertType = ref('success')
-const cashierName = ref('Kasir Cabang Utama')
+const isOnline = ref(navigator.onLine);
+const isSyncing = ref(false);
+const pendingTransactions = ref([]);
+const currentPage = ref(1);
+const itemsPerPage = ref(5);
+const showDeleteModal = ref(false);
+const showClearAllModal = ref(false);
+const selectedTransaction = ref(null);
+const showAlert = ref(false);
+const alertMessage = ref("");
+const alertType = ref("success");
+const cashierName = ref("Kasir Cabang Utama");
 
 // Computed
-const cashierInitial = computed(() => cashierName.value.charAt(0))
+const cashierInitial = computed(() => cashierName.value.charAt(0));
 const totalPendingValue = computed(() => {
-  return pendingTransactions.value.reduce((sum, t) => sum + t.total, 0)
-})
+  return pendingTransactions.value.reduce((sum, t) => sum + t.total, 0);
+});
 const failedCount = computed(() => {
-  return pendingTransactions.value.filter(t => t.status === 'failed').length
-})
-const totalPages = computed(() => Math.ceil(pendingTransactions.value.length / itemsPerPage.value))
+  return pendingTransactions.value.filter((t) => t.status === "failed").length;
+});
+const totalPages = computed(() =>
+  Math.ceil(pendingTransactions.value.length / itemsPerPage.value),
+);
 const paginatedTransactions = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return pendingTransactions.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return pendingTransactions.value.slice(start, end);
+});
 
 // Methods
-const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num)
+const formatNumber = (num) => new Intl.NumberFormat("id-ID").format(num);
 const formatDate = (dateStr) => {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-}
+  const d = new Date(dateStr);
+  return (
+    d.toLocaleDateString("id-ID") +
+    " " +
+    d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+  );
+};
 
 // Load pending from localStorage
 const loadPending = () => {
-  const stored = localStorage.getItem('pending_transactions')
+  const stored = localStorage.getItem("pending_transactions");
   if (stored) {
-    pendingTransactions.value = JSON.parse(stored)
+    pendingTransactions.value = JSON.parse(stored);
   } else {
-    pendingTransactions.value = []
+    pendingTransactions.value = [];
   }
-}
+};
 
 // Save to localStorage
 const savePending = () => {
-  localStorage.setItem('pending_transactions', JSON.stringify(pendingTransactions.value))
-}
+  localStorage.setItem(
+    "pending_transactions",
+    JSON.stringify(pendingTransactions.value),
+  );
+};
 
 // Simulate sync to server
 const syncTransaction = async (transaction) => {
@@ -244,149 +353,164 @@ const syncTransaction = async (transaction) => {
     setTimeout(() => {
       // Random success/fail for demo (90% success)
       if (Math.random() < 0.9) {
-        resolve(true)
+        resolve(true);
       } else {
-        reject(new Error('Gagal sinkronisasi'))
+        reject(new Error("Gagal sinkronisasi"));
       }
-    }, 800)
-  })
-}
+    }, 800);
+  });
+};
 
 // Retry sync individual transaction
 const retrySync = async (transaction) => {
   if (!isOnline.value) {
-    showAlertMessage('Tidak ada koneksi internet', 'error')
-    return
+    showAlertMessage("Tidak ada koneksi internet", "error");
+    return;
   }
 
-  transaction.status = 'pending'
-  savePending()
+  transaction.status = "pending";
+  savePending();
 
   try {
-    await syncTransaction(transaction)
+    await syncTransaction(transaction);
     // If success, remove from pending and move to synced
-    const index = pendingTransactions.value.findIndex(t => t.id === transaction.id)
+    const index = pendingTransactions.value.findIndex(
+      (t) => t.id === transaction.id,
+    );
     if (index !== -1) {
-      pendingTransactions.value.splice(index, 1)
-      savePending()
-      
+      pendingTransactions.value.splice(index, 1);
+      savePending();
+
       // Also add to synced transactions in localStorage
-      const synced = JSON.parse(localStorage.getItem('transactions') || '[]')
-      synced.push({ ...transaction, status: 'synced' })
-      localStorage.setItem('transactions', JSON.stringify(synced))
-      
-      showAlertMessage('Transaksi berhasil tersinkronisasi', 'success')
+      const synced = JSON.parse(localStorage.getItem("transactions") || "[]");
+      synced.push({ ...transaction, status: "synced" });
+      localStorage.setItem("transactions", JSON.stringify(synced));
+
+      showAlertMessage("Transaksi berhasil tersinkronisasi", "success");
     }
   } catch (error) {
-    transaction.status = 'failed'
-    savePending()
-    showAlertMessage('Gagal sinkronisasi, silakan coba lagi', 'error')
+    transaction.status = "failed";
+    savePending();
+    showAlertMessage("Gagal sinkronisasi, silakan coba lagi", "error");
   }
-}
+};
 
 // Sync all pending transactions
 const syncAll = async () => {
   if (!isOnline.value) {
-    showAlertMessage('Tidak ada koneksi internet', 'error')
-    return
+    showAlertMessage("Tidak ada koneksi internet", "error");
+    return;
   }
-  if (pendingTransactions.value.length === 0) return
+  if (pendingTransactions.value.length === 0) return;
 
-  isSyncing.value = true
-  const failedIds = []
+  isSyncing.value = true;
+  const failedIds = [];
 
   for (const transaction of pendingTransactions.value) {
-    transaction.status = 'pending'
-    savePending()
+    transaction.status = "pending";
+    savePending();
     try {
-      await syncTransaction(transaction)
+      await syncTransaction(transaction);
       // Success: will be removed after loop
     } catch (error) {
-      transaction.status = 'failed'
-      failedIds.push(transaction.id)
-      savePending()
+      transaction.status = "failed";
+      failedIds.push(transaction.id);
+      savePending();
     }
   }
 
   // Remove successful ones (those not in failedIds)
-  const newPending = pendingTransactions.value.filter(t => failedIds.includes(t.id))
-  pendingTransactions.value = newPending
-  savePending()
+  const newPending = pendingTransactions.value.filter((t) =>
+    failedIds.includes(t.id),
+  );
+  pendingTransactions.value = newPending;
+  savePending();
 
   // Add successful to synced
-  const synced = JSON.parse(localStorage.getItem('transactions') || '[]')
+  const synced = JSON.parse(localStorage.getItem("transactions") || "[]");
   // In a real app you'd add only the successful ones; here we simplify
   // Reload to reflect changes
-  loadPending()
+  loadPending();
 
-  isSyncing.value = false
+  isSyncing.value = false;
   if (failedIds.length === 0) {
-    showAlertMessage('Semua transaksi berhasil tersinkronisasi', 'success')
+    showAlertMessage("Semua transaksi berhasil tersinkronisasi", "success");
   } else {
-    showAlertMessage(`${failedIds.length} transaksi gagal disinkronisasi`, 'error')
+    showAlertMessage(
+      `${failedIds.length} transaksi gagal disinkronisasi`,
+      "error",
+    );
   }
-}
+};
 
 // Delete individual transaction
 const deleteTransaction = (transaction) => {
-  selectedTransaction.value = transaction
-  showDeleteModal.value = true
-}
+  selectedTransaction.value = transaction;
+  showDeleteModal.value = true;
+};
 
 const confirmDeleteTransaction = () => {
-  const index = pendingTransactions.value.findIndex(t => t.id === selectedTransaction.value.id)
+  const index = pendingTransactions.value.findIndex(
+    (t) => t.id === selectedTransaction.value.id,
+  );
   if (index !== -1) {
-    pendingTransactions.value.splice(index, 1)
-    savePending()
-    showAlertMessage('Transaksi pending dihapus', 'success')
+    pendingTransactions.value.splice(index, 1);
+    savePending();
+    showAlertMessage("Transaksi pending dihapus", "success");
   }
-  showDeleteModal.value = false
-  selectedTransaction.value = null
-}
+  showDeleteModal.value = false;
+  selectedTransaction.value = null;
+};
 
 // Clear all pending
 const clearAll = () => {
-  if (pendingTransactions.value.length === 0) return
-  showClearAllModal.value = true
-}
+  if (pendingTransactions.value.length === 0) return;
+  showClearAllModal.value = true;
+};
 
 const confirmClearAll = () => {
-  pendingTransactions.value = []
-  savePending()
-  showAlertMessage('Semua transaksi pending dihapus', 'success')
-  showClearAllModal.value = false
-}
+  pendingTransactions.value = [];
+  savePending();
+  showAlertMessage("Semua transaksi pending dihapus", "success");
+  showClearAllModal.value = false;
+};
 
 const showAlertMessage = (message, type) => {
-  alertMessage.value = message
-  alertType.value = type
-  showAlert.value = true
-  setTimeout(() => { showAlert.value = false }, 3000)
-}
+  alertMessage.value = message;
+  alertType.value = type;
+  showAlert.value = true;
+  setTimeout(() => {
+    showAlert.value = false;
+  }, 3000);
+};
 
-const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
-const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
 
 // Online status
 const updateOnlineStatus = () => {
-  isOnline.value = navigator.onLine
+  isOnline.value = navigator.onLine;
   // Auto-sync when coming online
   if (isOnline.value && pendingTransactions.value.length > 0) {
-    syncAll()
+    syncAll();
   }
-}
+};
 
 // Load initial data
 onMounted(() => {
-  loadPending()
-  window.addEventListener('online', updateOnlineStatus)
-  window.addEventListener('offline', updateOnlineStatus)
-})
+  loadPending();
+  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("offline", updateOnlineStatus);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('online', updateOnlineStatus)
-  window.removeEventListener('offline', updateOnlineStatus)
-})
+  window.removeEventListener("online", updateOnlineStatus);
+  window.removeEventListener("offline", updateOnlineStatus);
+});
 </script>
 
 <style scoped>
@@ -410,12 +534,12 @@ onUnmounted(() => {
   background: white;
   padding: 1rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .page-title h1 {
   font-size: 1.25rem;
-  color: #1F3864;
+  color: #1f3864;
   margin-bottom: 0.25rem;
 }
 
@@ -459,7 +583,7 @@ onUnmounted(() => {
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: #2E75B6;
+  background: #2e75b6;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -479,7 +603,7 @@ onUnmounted(() => {
   background: white;
   border-radius: 12px;
   padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .stat-label {
@@ -500,7 +624,8 @@ onUnmounted(() => {
   margin-bottom: 1.5rem;
 }
 
-.btn-sync-all, .btn-clear-all {
+.btn-sync-all,
+.btn-clear-all {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -514,12 +639,12 @@ onUnmounted(() => {
 }
 
 .btn-sync-all {
-  background: #1F3864;
+  background: #1f3864;
   color: white;
 }
 
 .btn-sync-all:hover:not(:disabled) {
-  background: #15284D;
+  background: #15284d;
 }
 
 .btn-sync-all:disabled {
@@ -544,7 +669,7 @@ onUnmounted(() => {
 .card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -594,7 +719,7 @@ onUnmounted(() => {
 
 .pending-id {
   font-weight: 600;
-  color: #1F3864;
+  color: #1f3864;
 }
 
 .pending-date {
@@ -665,7 +790,8 @@ onUnmounted(() => {
   gap: 0.75rem;
 }
 
-.btn-retry, .btn-delete {
+.btn-retry,
+.btn-delete {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -700,7 +826,8 @@ onUnmounted(() => {
   background: #dc2626;
 }
 
-.btn-retry svg, .btn-delete svg {
+.btn-retry svg,
+.btn-delete svg {
   width: 14px;
   height: 14px;
 }
@@ -752,7 +879,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
