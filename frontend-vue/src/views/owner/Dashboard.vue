@@ -9,9 +9,12 @@
           <p>Selamat datang, {{ userName }}</p>
         </div>
         <div class="top-bar-right">
-          <div class="connection-status" :class="{ online: isOnline, offline: !isOnline }">
+          <div
+            class="connection-status"
+            :class="{ online: isOnline, offline: !isOnline }"
+          >
             <span class="status-dot"></span>
-            <span>{{ isOnline ? 'Online' : 'Offline' }}</span>
+            <span>{{ isOnline ? "Online" : "Offline" }}</span>
           </div>
           <div class="user-avatar">
             <span>{{ userInitial }}</span>
@@ -22,8 +25,15 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon revenue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
           <div class="stat-info">
@@ -35,8 +45,15 @@
 
         <div class="stat-card">
           <div class="stat-icon transactions">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
           </div>
           <div class="stat-info">
@@ -48,8 +65,13 @@
 
         <div class="stat-card">
           <div class="stat-icon expired">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div class="stat-info">
@@ -61,13 +83,22 @@
 
         <div class="stat-card">
           <div class="stat-icon cash-diff">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
           <div class="stat-info">
             <p class="stat-label">Selisih Kas</p>
-            <p class="stat-value warning">Rp {{ formatNumber(totalDifference) }}</p>
+            <p class="stat-value warning">
+              Rp {{ formatNumber(totalDifference) }}
+            </p>
             <p class="stat-label-small">Hari ini</p>
           </div>
         </div>
@@ -100,15 +131,26 @@
                 <td class="revenue">Rp {{ formatNumber(branch.revenue) }}</td>
                 <td>{{ branch.transactions }}</td>
                 <td>Rp {{ formatNumber(branch.average) }}</td>
-                <td :class="branch.difference < 0 ? 'negative' : branch.difference > 0 ? 'positive' : 'zero'">
+                <td
+                  :class="
+                    branch.difference < 0
+                      ? 'negative'
+                      : branch.difference > 0
+                        ? 'positive'
+                        : 'zero'
+                  "
+                >
                   Rp {{ formatNumber(Math.abs(branch.difference)) }}
                   <span v-if="branch.difference !== 0" class="diff-sign">
-                    {{ branch.difference < 0 ? '(Kurang)' : '(Lebih)' }}
+                    {{ branch.difference < 0 ? "(Kurang)" : "(Lebih)" }}
                   </span>
                 </td>
                 <td>
-                  <span class="status-badge" :class="branch.status === 'active' ? 'active' : 'closed'">
-                    {{ branch.status === 'active' ? 'Aktif' : 'Tutup' }}
+                  <span
+                    class="status-badge"
+                    :class="branch.status === 'active' ? 'active' : 'closed'"
+                  >
+                    {{ branch.status === "active" ? "Aktif" : "Tutup" }}
                   </span>
                 </td>
               </tr>
@@ -121,15 +163,24 @@
         <div class="card">
           <div class="card-header">
             <h3>⚠️ Produk Mendekati Expired</h3>
-            <button class="link-btn" @click="viewAllExpired">Lihat semua</button>
+            <button class="link-btn" @click="viewAllExpired">
+              Lihat semua
+            </button>
           </div>
           <div class="product-list">
-            <div v-for="product in expiredProductsList" :key="product.id" class="product-item">
+            <div
+              v-for="product in expiredProductsList"
+              :key="product.id"
+              class="product-item"
+            >
               <div class="product-info">
                 <p class="product-name">{{ product.name }}</p>
                 <p class="product-branch">{{ product.branch_name }}</p>
               </div>
-              <div class="product-expiry" :class="product.daysLeft <= 3 ? 'urgent' : 'warning'">
+              <div
+                class="product-expiry"
+                :class="product.daysLeft <= 3 ? 'urgent' : 'warning'"
+              >
                 <span>{{ product.daysLeft }} hari lagi</span>
                 <small>Exp: {{ formatDate(product.expired_date) }}</small>
               </div>
@@ -140,16 +191,28 @@
         <div class="card">
           <div class="card-header">
             <h3>💰 Selisih Kas Terbaru</h3>
-            <button class="link-btn" @click="viewAllDifferences">Lihat semua</button>
+            <button class="link-btn" @click="viewAllDifferences">
+              Lihat semua
+            </button>
           </div>
           <div class="difference-list">
-            <div v-for="diff in cashDifferencesList" :key="diff.id" class="difference-item">
+            <div
+              v-for="diff in cashDifferencesList"
+              :key="diff.id"
+              class="difference-item"
+            >
               <div class="difference-info">
                 <p class="branch-name">{{ diff.branch_name }}</p>
-                <p class="difference-detail">{{ diff.shift_date }} | Kasir: {{ diff.cashier_name }}</p>
+                <p class="difference-detail">
+                  {{ diff.shift_date }} | Kasir: {{ diff.cashier_name }}
+                </p>
               </div>
-              <div class="difference-amount" :class="diff.difference < 0 ? 'negative' : 'positive'">
-                {{ diff.difference < 0 ? 'Kurang' : 'Lebih' }} Rp {{ formatNumber(Math.abs(diff.difference)) }}
+              <div
+                class="difference-amount"
+                :class="diff.difference < 0 ? 'negative' : 'positive'"
+              >
+                {{ diff.difference < 0 ? "Kurang" : "Lebih" }} Rp
+                {{ formatNumber(Math.abs(diff.difference)) }}
                 <small>{{ diff.time_ago }}</small>
               </div>
             </div>
@@ -161,76 +224,124 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import SidebarOwner from '../../components/SidebarOwner.vue'
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import SidebarOwner from "../../components/SidebarOwner.vue";
 
-const router = useRouter()
+const router = useRouter();
 
-const isOnline = ref(navigator.onLine)
-const selectedBranch = ref('all')
-const userName = ref('Owner Nicky Frozen')
-const totalRevenue = ref(6790000)
-const totalTransactions = ref(240)
-const expiringProducts = ref(5)
-const totalDifference = ref(3000)
+const isOnline = ref(navigator.onLine);
+const selectedBranch = ref("all");
+const userName = ref("Owner Nicky Frozen");
+const totalRevenue = ref(6790000);
+const totalTransactions = ref(240);
+const expiringProducts = ref(5);
+const totalDifference = ref(3000);
 
 const branches = ref([
-  { id: 1, name: 'Cabang Utama', revenue: 3850000, transactions: 142, average: 27113, difference: -5000, status: 'active' },
-  { id: 2, name: 'Cabang Kedua', revenue: 2940000, transactions: 98, average: 30000, difference: 2000, status: 'active' }
-])
+  {
+    id: 1,
+    name: "Cabang Utama",
+    revenue: 3850000,
+    transactions: 142,
+    average: 27113,
+    difference: -5000,
+    status: "active",
+  },
+  {
+    id: 2,
+    name: "Cabang Kedua",
+    revenue: 2940000,
+    transactions: 98,
+    average: 30000,
+    difference: 2000,
+    status: "active",
+  },
+]);
 
 const expiredProductsList = ref([
-  { id: 1, name: 'Nugget Ayam', branch_name: 'Cabang Utama', expired_date: '2025-12-31', daysLeft: 5 },
-  { id: 2, name: 'Sosis Solo', branch_name: 'Cabang Kedua', expired_date: '2025-11-30', daysLeft: 2 },
-  { id: 3, name: 'Roti Bakar', branch_name: 'Cabang Utama', expired_date: '2025-10-15', daysLeft: 1 }
-])
+  {
+    id: 1,
+    name: "Nugget Ayam",
+    branch_name: "Cabang Utama",
+    expired_date: "2025-12-31",
+    daysLeft: 5,
+  },
+  {
+    id: 2,
+    name: "Sosis Solo",
+    branch_name: "Cabang Kedua",
+    expired_date: "2025-11-30",
+    daysLeft: 2,
+  },
+  {
+    id: 3,
+    name: "Roti Bakar",
+    branch_name: "Cabang Utama",
+    expired_date: "2025-10-15",
+    daysLeft: 1,
+  },
+]);
 
 const cashDifferencesList = ref([
-  { id: 1, branch_name: 'Cabang Utama', shift_date: '25/05/2026', cashier_name: 'Siti', difference: -5000, time_ago: '2 jam lalu' },
-  { id: 2, branch_name: 'Cabang Kedua', shift_date: '25/05/2026', cashier_name: 'Budi', difference: 2000, time_ago: '5 jam lalu' }
-])
+  {
+    id: 1,
+    branch_name: "Cabang Utama",
+    shift_date: "25/05/2026",
+    cashier_name: "Siti",
+    difference: -5000,
+    time_ago: "2 jam lalu",
+  },
+  {
+    id: 2,
+    branch_name: "Cabang Kedua",
+    shift_date: "25/05/2026",
+    cashier_name: "Budi",
+    difference: 2000,
+    time_ago: "5 jam lalu",
+  },
+]);
 
 const userInitial = computed(() => {
-  return userName.value.charAt(0)
-})
+  return userName.value.charAt(0);
+});
 
 const filteredBranches = computed(() => {
-  if (selectedBranch.value === 'all') return branches.value
-  return branches.value.filter(b => b.id.toString() === selectedBranch.value)
-})
+  if (selectedBranch.value === "all") return branches.value;
+  return branches.value.filter((b) => b.id.toString() === selectedBranch.value);
+});
 
 const formatNumber = (num) => {
-  return new Intl.NumberFormat('id-ID').format(num)
-}
+  return new Intl.NumberFormat("id-ID").format(num);
+};
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('id-ID')
-}
+  return new Date(date).toLocaleDateString("id-ID");
+};
 
 const viewAllExpired = () => {
-  router.push('/admin/products')
-}
+  router.push("/admin/products");
+};
 
 const viewAllDifferences = () => {
-  router.push('/admin/shifts')
-}
+  router.push("/admin/shifts");
+};
 
 const updateOnlineStatus = () => {
-  isOnline.value = navigator.onLine
-}
+  isOnline.value = navigator.onLine;
+};
 
 onMounted(() => {
-  window.addEventListener('online', updateOnlineStatus)
-  window.addEventListener('offline', updateOnlineStatus)
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  if (user.name) userName.value = user.name
-})
+  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("offline", updateOnlineStatus);
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  if (user.name) userName.value = user.name;
+});
 
 onUnmounted(() => {
-  window.removeEventListener('online', updateOnlineStatus)
-  window.removeEventListener('offline', updateOnlineStatus)
-})
+  window.removeEventListener("online", updateOnlineStatus);
+  window.removeEventListener("offline", updateOnlineStatus);
+});
 </script>
 
 <style scoped>
@@ -254,12 +365,12 @@ onUnmounted(() => {
   background: white;
   padding: 1rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .page-title h1 {
   font-size: 1.25rem;
-  color: #1F3864;
+  color: #1f3864;
   margin-bottom: 0.25rem;
 }
 
@@ -303,7 +414,7 @@ onUnmounted(() => {
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: #2E75B6;
+  background: #2e75b6;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -325,7 +436,7 @@ onUnmounted(() => {
   padding: 1rem;
   display: flex;
   gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .stat-icon {
@@ -405,7 +516,7 @@ onUnmounted(() => {
   background: white;
   border-radius: 12px;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -434,7 +545,7 @@ onUnmounted(() => {
 .link-btn {
   background: none;
   border: none;
-  color: #2E75B6;
+  color: #2e75b6;
   font-size: 0.75rem;
   cursor: pointer;
 }
