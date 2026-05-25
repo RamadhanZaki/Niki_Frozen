@@ -10,9 +10,12 @@
           <p>Ringkasan pendapatan, transaksi, dan laba per cabang</p>
         </div>
         <div class="top-bar-right">
-          <div class="connection-status" :class="{ online: isOnline, offline: !isOnline }">
+          <div
+            class="connection-status"
+            :class="{ online: isOnline, offline: !isOnline }"
+          >
             <span class="status-dot"></span>
-            <span>{{ isOnline ? 'Online' : 'Offline' }}</span>
+            <span>{{ isOnline ? "Online" : "Offline" }}</span>
           </div>
           <div class="user-avatar">
             <span>{{ userInitial }}</span>
@@ -41,16 +44,23 @@
         </div>
         <div class="filter-group" v-if="period === 'custom'">
           <label>Dari</label>
-          <input type="date" v-model="startDate" class="date-input">
+          <input type="date" v-model="startDate" class="date-input" />
         </div>
         <div class="filter-group" v-if="period === 'custom'">
           <label>Sampai</label>
-          <input type="date" v-model="endDate" class="date-input">
+          <input type="date" v-model="endDate" class="date-input" />
         </div>
         <button class="btn-filter" @click="applyFilter">Terapkan</button>
         <button class="btn-export" @click="exportPDF">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
           </svg>
           <span>Export PDF</span>
         </button>
@@ -60,8 +70,15 @@
       <div class="summary-grid">
         <div class="summary-card">
           <div class="summary-icon revenue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
           <div class="summary-info">
@@ -72,8 +89,15 @@
         </div>
         <div class="summary-card">
           <div class="summary-icon transactions">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
           </div>
           <div class="summary-info">
@@ -84,8 +108,13 @@
         </div>
         <div class="summary-card">
           <div class="summary-icon profit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
           <div class="summary-info">
@@ -96,13 +125,22 @@
         </div>
         <div class="summary-card">
           <div class="summary-icon average">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
             </svg>
           </div>
           <div class="summary-info">
             <p class="summary-label">Rata-rata per Transaksi</p>
-            <p class="summary-value">Rp {{ formatNumber(averageTransaction) }}</p>
+            <p class="summary-value">
+              Rp {{ formatNumber(averageTransaction) }}
+            </p>
             <p class="summary-sub">Periode terpilih</p>
           </div>
         </div>
@@ -147,28 +185,54 @@
                 <td class="revenue">Rp {{ formatNumber(report.revenue) }}</td>
                 <td>{{ report.transactions }}</td>
                 <td>Rp {{ formatNumber(report.average) }}</td>
-                <td class="profit-cell">Rp {{ formatNumber(report.profit) }}</td>
+                <td class="profit-cell">
+                  Rp {{ formatNumber(report.profit) }}
+                </td>
               </tr>
               <tr v-if="filteredReports.length === 0">
-                <td colspan="6" class="empty-row">Tidak ada data laporan untuk periode yang dipilih</td>
+                <td colspan="6" class="empty-row">
+                  Tidak ada data laporan untuk periode yang dipilih
+                </td>
               </tr>
             </tbody>
             <tfoot v-if="filteredReports.length > 0">
               <tr class="total-row">
                 <td colspan="2"><strong>Total</strong></td>
-                <td><strong>Rp {{ formatNumber(totalRevenue) }}</strong></td>
-                <td><strong>{{ totalTransactions }}</strong></td>
-                <td><strong>Rp {{ formatNumber(averageTransaction) }}</strong></td>
-                <td><strong>Rp {{ formatNumber(netProfit) }}</strong></td>
+                <td>
+                  <strong>Rp {{ formatNumber(totalRevenue) }}</strong>
+                </td>
+                <td>
+                  <strong>{{ totalTransactions }}</strong>
+                </td>
+                <td>
+                  <strong>Rp {{ formatNumber(averageTransaction) }}</strong>
+                </td>
+                <td>
+                  <strong>Rp {{ formatNumber(netProfit) }}</strong>
+                </td>
               </tr>
             </tfoot>
           </table>
         </div>
         <!-- Pagination -->
         <div class="pagination" v-if="totalPages > 1">
-          <button class="page-btn" @click="prevPage" :disabled="currentPage === 1">&laquo; Sebelumnya</button>
-          <span class="page-info">Halaman {{ currentPage }} dari {{ totalPages }}</span>
-          <button class="page-btn" @click="nextPage" :disabled="currentPage === totalPages">Selanjutnya &raquo;</button>
+          <button
+            class="page-btn"
+            @click="prevPage"
+            :disabled="currentPage === 1"
+          >
+            &laquo; Sebelumnya
+          </button>
+          <span class="page-info"
+            >Halaman {{ currentPage }} dari {{ totalPages }}</span
+          >
+          <button
+            class="page-btn"
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+          >
+            Selanjutnya &raquo;
+          </button>
         </div>
       </div>
     </main>
@@ -176,154 +240,265 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import SidebarOwner from '../../components/SidebarOwner.vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { useRouter } from "vue-router";
+import SidebarOwner from "../../components/SidebarOwner.vue";
 
-
-const router = useRouter()
+const router = useRouter();
 
 // Reactive state
-const isOnline = ref(navigator.onLine)
-const selectedBranch = ref('all')
-const period = ref('week')
-const startDate = ref('')
-const endDate = ref('')
-const chartType = ref('bar')
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
-let revenueChart = null
+const isOnline = ref(navigator.onLine);
+const selectedBranch = ref("all");
+const period = ref("week");
+const startDate = ref("");
+const endDate = ref("");
+const chartType = ref("bar");
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+let revenueChart = null;
 
 // Dummy data for reports
 const allReports = ref([
-  { date: '2026-05-25', branch_id: 1, branch_name: 'Cabang Utama', revenue: 3850000, transactions: 142, average: 27113, profit: 962500 },
-  { date: '2026-05-25', branch_id: 2, branch_name: 'Cabang Kedua', revenue: 2940000, transactions: 98, average: 30000, profit: 735000 },
-  { date: '2026-05-24', branch_id: 1, branch_name: 'Cabang Utama', revenue: 4200000, transactions: 156, average: 26923, profit: 1050000 },
-  { date: '2026-05-24', branch_id: 2, branch_name: 'Cabang Kedua', revenue: 3100000, transactions: 103, average: 30097, profit: 775000 },
-  { date: '2026-05-23', branch_id: 1, branch_name: 'Cabang Utama', revenue: 3980000, transactions: 148, average: 26892, profit: 995000 },
-  { date: '2026-05-23', branch_id: 2, branch_name: 'Cabang Kedua', revenue: 2870000, transactions: 95, average: 30211, profit: 717500 },
-  { date: '2026-05-22', branch_id: 1, branch_name: 'Cabang Utama', revenue: 4100000, transactions: 152, average: 26974, profit: 1025000 },
-  { date: '2026-05-22', branch_id: 2, branch_name: 'Cabang Kedua', revenue: 3050000, transactions: 101, average: 30198, profit: 762500 },
-  { date: '2026-05-21', branch_id: 1, branch_name: 'Cabang Utama', revenue: 3900000, transactions: 145, average: 26897, profit: 975000 },
-  { date: '2026-05-21', branch_id: 2, branch_name: 'Cabang Kedua', revenue: 2980000, transactions: 99, average: 30101, profit: 745000 },
-])
+  {
+    date: "2026-05-25",
+    branch_id: 1,
+    branch_name: "Cabang Utama",
+    revenue: 3850000,
+    transactions: 142,
+    average: 27113,
+    profit: 962500,
+  },
+  {
+    date: "2026-05-25",
+    branch_id: 2,
+    branch_name: "Cabang Kedua",
+    revenue: 2940000,
+    transactions: 98,
+    average: 30000,
+    profit: 735000,
+  },
+  {
+    date: "2026-05-24",
+    branch_id: 1,
+    branch_name: "Cabang Utama",
+    revenue: 4200000,
+    transactions: 156,
+    average: 26923,
+    profit: 1050000,
+  },
+  {
+    date: "2026-05-24",
+    branch_id: 2,
+    branch_name: "Cabang Kedua",
+    revenue: 3100000,
+    transactions: 103,
+    average: 30097,
+    profit: 775000,
+  },
+  {
+    date: "2026-05-23",
+    branch_id: 1,
+    branch_name: "Cabang Utama",
+    revenue: 3980000,
+    transactions: 148,
+    average: 26892,
+    profit: 995000,
+  },
+  {
+    date: "2026-05-23",
+    branch_id: 2,
+    branch_name: "Cabang Kedua",
+    revenue: 2870000,
+    transactions: 95,
+    average: 30211,
+    profit: 717500,
+  },
+  {
+    date: "2026-05-22",
+    branch_id: 1,
+    branch_name: "Cabang Utama",
+    revenue: 4100000,
+    transactions: 152,
+    average: 26974,
+    profit: 1025000,
+  },
+  {
+    date: "2026-05-22",
+    branch_id: 2,
+    branch_name: "Cabang Kedua",
+    revenue: 3050000,
+    transactions: 101,
+    average: 30198,
+    profit: 762500,
+  },
+  {
+    date: "2026-05-21",
+    branch_id: 1,
+    branch_name: "Cabang Utama",
+    revenue: 3900000,
+    transactions: 145,
+    average: 26897,
+    profit: 975000,
+  },
+  {
+    date: "2026-05-21",
+    branch_id: 2,
+    branch_name: "Cabang Kedua",
+    revenue: 2980000,
+    transactions: 99,
+    average: 30101,
+    profit: 745000,
+  },
+]);
 
 // Helper: filter reports by branch and date range
 const filteredReports = computed(() => {
-  let reports = [...allReports.value]
+  let reports = [...allReports.value];
 
   // Filter by branch
-  if (selectedBranch.value !== 'all') {
-    reports = reports.filter(r => r.branch_id.toString() === selectedBranch.value)
+  if (selectedBranch.value !== "all") {
+    reports = reports.filter(
+      (r) => r.branch_id.toString() === selectedBranch.value,
+    );
   }
 
   // Filter by date range based on period
-  const today = new Date()
-  let start = null
-  let end = null
+  const today = new Date();
+  let start = null;
+  let end = null;
 
-  if (period.value === 'today') {
-    start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
-  } else if (period.value === 'week') {
+  if (period.value === "today") {
+    start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    end = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+  } else if (period.value === "week") {
     // Get Monday of current week
-    const day = today.getDay()
-    const diffToMonday = day === 0 ? 6 : day - 1
-    start = new Date(today)
-    start.setDate(today.getDate() - diffToMonday)
-    start.setHours(0,0,0,0)
-    end = new Date(today)
-    end.setHours(23,59,59,999)
-  } else if (period.value === 'month') {
-    start = new Date(today.getFullYear(), today.getMonth(), 1)
-    end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999)
-  } else if (period.value === 'custom') {
+    const day = today.getDay();
+    const diffToMonday = day === 0 ? 6 : day - 1;
+    start = new Date(today);
+    start.setDate(today.getDate() - diffToMonday);
+    start.setHours(0, 0, 0, 0);
+    end = new Date(today);
+    end.setHours(23, 59, 59, 999);
+  } else if (period.value === "month") {
+    start = new Date(today.getFullYear(), today.getMonth(), 1);
+    end = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+  } else if (period.value === "custom") {
     if (startDate.value && endDate.value) {
-      start = new Date(startDate.value)
-      start.setHours(0,0,0,0)
-      end = new Date(endDate.value)
-      end.setHours(23,59,59,999)
+      start = new Date(startDate.value);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(endDate.value);
+      end.setHours(23, 59, 59, 999);
     }
   }
 
   if (start && end) {
-    reports = reports.filter(r => {
-      const rDate = new Date(r.date)
-      return rDate >= start && rDate <= end
-    })
+    reports = reports.filter((r) => {
+      const rDate = new Date(r.date);
+      return rDate >= start && rDate <= end;
+    });
   }
 
   // Sort by date descending
-  reports.sort((a,b) => new Date(b.date) - new Date(a.date))
-  return reports
-})
+  reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return reports;
+});
 
 // Summary calculations
-const totalRevenue = computed(() => filteredReports.value.reduce((sum, r) => sum + r.revenue, 0))
-const totalTransactions = computed(() => filteredReports.value.reduce((sum, r) => sum + r.transactions, 0))
-const netProfit = computed(() => filteredReports.value.reduce((sum, r) => sum + r.profit, 0))
-const averageTransaction = computed(() => totalTransactions.value === 0 ? 0 : totalRevenue.value / totalTransactions.value)
+const totalRevenue = computed(() =>
+  filteredReports.value.reduce((sum, r) => sum + r.revenue, 0),
+);
+const totalTransactions = computed(() =>
+  filteredReports.value.reduce((sum, r) => sum + r.transactions, 0),
+);
+const netProfit = computed(() =>
+  filteredReports.value.reduce((sum, r) => sum + r.profit, 0),
+);
+const averageTransaction = computed(() =>
+  totalTransactions.value === 0
+    ? 0
+    : totalRevenue.value / totalTransactions.value,
+);
 
 // Pagination
-const totalPages = computed(() => Math.ceil(filteredReports.value.length / itemsPerPage.value))
+const totalPages = computed(() =>
+  Math.ceil(filteredReports.value.length / itemsPerPage.value),
+);
 const paginatedReports = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredReports.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredReports.value.slice(start, end);
+});
 
 // User initial
-const userName = ref('Owner Nicky Frozen')
-const userInitial = computed(() => userName.value.charAt(0))
+const userName = ref("Owner Nicky Frozen");
+const userInitial = computed(() => userName.value.charAt(0));
 
 // Methods
-const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num)
-const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('id-ID')
+const formatNumber = (num) => new Intl.NumberFormat("id-ID").format(num);
+const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("id-ID");
 
 const applyFilter = () => {
-  currentPage.value = 1
-  renderChart()
-}
+  currentPage.value = 1;
+  renderChart();
+};
 
-const refreshData = () => renderChart()
+const refreshData = () => renderChart();
 
 const exportPDF = () => {
-  alert('Fitur ekspor PDF akan segera tersedia. (Simulasi)')
-}
+  alert("Fitur ekspor PDF akan segera tersedia. (Simulasi)");
+};
 
 const renderChart = async () => {
-  if (revenueChart) revenueChart.destroy()
+  if (revenueChart) revenueChart.destroy();
 
   // Wait for DOM update
-  await nextTick()
-  const canvas = revenueChartCanvas.value
-  if (!canvas) return
+  await nextTick();
+  const canvas = revenueChartCanvas.value;
+  if (!canvas) return;
 
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   // Aggregate revenue per date
-  const grouped = {}
-  filteredReports.value.forEach(r => {
-    const date = formatDate(r.date)
-    grouped[date] = (grouped[date] || 0) + r.revenue
-  })
-  const labels = Object.keys(grouped).sort()
-  const data = labels.map(l => grouped[l])
+  const grouped = {};
+  filteredReports.value.forEach((r) => {
+    const date = formatDate(r.date);
+    grouped[date] = (grouped[date] || 0) + r.revenue;
+  });
+  const labels = Object.keys(grouped).sort();
+  const data = labels.map((l) => grouped[l]);
 
   revenueChart = new Chart(ctx, {
     type: chartType.value,
     data: {
       labels: labels,
-      datasets: [{
-        label: 'Pendapatan (Rp)',
-        data: data,
-        backgroundColor: 'rgba(46, 117, 182, 0.5)',
-        borderColor: '#1F3864',
-        borderWidth: 2,
-        tension: 0.3,
-        fill: true
-      }]
+      datasets: [
+        {
+          label: "Pendapatan (Rp)",
+          data: data,
+          backgroundColor: "rgba(46, 117, 182, 0.5)",
+          borderColor: "#1F3864",
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -331,52 +506,60 @@ const renderChart = async () => {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (ctx) => `Rp ${formatNumber(ctx.raw)}`
-          }
-        }
+            label: (ctx) => `Rp ${formatNumber(ctx.raw)}`,
+          },
+        },
       },
       scales: {
         y: {
           ticks: {
-            callback: (val) => 'Rp ' + formatNumber(val)
-          }
-        }
-      }
-    }
-  })
-}
+            callback: (val) => "Rp " + formatNumber(val),
+          },
+        },
+      },
+    },
+  });
+};
 
-const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
-const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
 
 // Watch for changes that affect chart
-watch([selectedBranch, period, startDate, endDate, chartType], () => applyFilter())
+watch([selectedBranch, period, startDate, endDate, chartType], () =>
+  applyFilter(),
+);
 
 // Online status
-const updateOnlineStatus = () => { isOnline.value = navigator.onLine }
+const updateOnlineStatus = () => {
+  isOnline.value = navigator.onLine;
+};
 
 // Chart canvas ref
-const revenueChartCanvas = ref(null)
+const revenueChartCanvas = ref(null);
 
 onMounted(() => {
-  window.addEventListener('online', updateOnlineStatus)
-  window.addEventListener('offline', updateOnlineStatus)
+  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("offline", updateOnlineStatus);
 
   // Set default custom dates (7 days range)
-  const today = new Date()
-  const weekAgo = new Date(today)
-  weekAgo.setDate(today.getDate() - 7)
-  startDate.value = weekAgo.toISOString().split('T')[0]
-  endDate.value = today.toISOString().split('T')[0]
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 7);
+  startDate.value = weekAgo.toISOString().split("T")[0];
+  endDate.value = today.toISOString().split("T")[0];
 
-  renderChart()
-})
+  renderChart();
+});
 
 onUnmounted(() => {
-  window.removeEventListener('online', updateOnlineStatus)
-  window.removeEventListener('offline', updateOnlineStatus)
-  if (revenueChart) revenueChart.destroy()
-})
+  window.removeEventListener("online", updateOnlineStatus);
+  window.removeEventListener("offline", updateOnlineStatus);
+  if (revenueChart) revenueChart.destroy();
+});
 </script>
 
 <style scoped>
@@ -399,11 +582,11 @@ onUnmounted(() => {
   background: white;
   padding: 1rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .page-title h1 {
   font-size: 1.25rem;
-  color: #1F3864;
+  color: #1f3864;
   margin-bottom: 0.25rem;
 }
 .page-title p {
@@ -440,7 +623,7 @@ onUnmounted(() => {
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: #2E75B6;
+  background: #2e75b6;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -457,7 +640,7 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 1rem;
   align-items: flex-end;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .filter-group {
   display: flex;
@@ -469,14 +652,16 @@ onUnmounted(() => {
   color: #6b7280;
   font-weight: 500;
 }
-.filter-select, .date-input {
+.filter-select,
+.date-input {
   padding: 0.5rem;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 0.8rem;
   background: white;
 }
-.btn-filter, .btn-export {
+.btn-filter,
+.btn-export {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -488,7 +673,7 @@ onUnmounted(() => {
   font-weight: 500;
 }
 .btn-filter {
-  background: #1F3864;
+  background: #1f3864;
   color: white;
 }
 .btn-export {
@@ -502,7 +687,7 @@ onUnmounted(() => {
 .btn-refresh {
   background: none;
   border: none;
-  color: #2E75B6;
+  color: #2e75b6;
   cursor: pointer;
   font-size: 0.8rem;
 }
@@ -518,7 +703,7 @@ onUnmounted(() => {
   padding: 1rem;
   display: flex;
   gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .summary-icon {
   width: 48px;
@@ -570,7 +755,7 @@ onUnmounted(() => {
   background: white;
   border-radius: 12px;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 .card-header {
@@ -601,7 +786,8 @@ onUnmounted(() => {
   width: 100%;
   border-collapse: collapse;
 }
-.data-table th, .data-table td {
+.data-table th,
+.data-table td {
   padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
@@ -616,7 +802,8 @@ onUnmounted(() => {
 .data-table td {
   font-size: 0.8rem;
 }
-.revenue, .profit-cell {
+.revenue,
+.profit-cell {
   font-weight: 500;
 }
 .total-row {
@@ -664,7 +851,8 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: stretch;
   }
-  .btn-filter, .btn-export {
+  .btn-filter,
+  .btn-export {
     justify-content: center;
   }
 }
