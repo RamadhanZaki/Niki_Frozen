@@ -12,7 +12,11 @@
           <p>Kasir: {{ cashierName }} | Cabang Utama</p>
         </div>
         <div class="top-bar-right">
-          <div class="pending-badge" v-if="pendingCount > 0" @click="showPendingModal = true">
+          <div
+            class="pending-badge"
+            v-if="pendingCount > 0"
+            @click="showPendingModal = true"
+          >
             <span class="pending-icon">📤</span>
             <span class="pending-count">{{ pendingCount }}</span>
           </div>
@@ -24,14 +28,23 @@
 
       <!-- Shift Warning -->
       <div v-if="!shiftActive" class="shift-warning">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
         </svg>
         <div>
           <h3>Shift Belum Dibuka</h3>
           <p>Silakan buka shift terlebih dahulu untuk memulai transaksi</p>
         </div>
-        <button @click="openShiftModal = true" class="btn-primary">Buka Shift</button>
+        <button @click="openShiftModal = true" class="btn-primary">
+          Buka Shift
+        </button>
       </div>
 
       <!-- POS Content -->
@@ -39,29 +52,37 @@
         <!-- Left: Product Grid -->
         <div class="product-section">
           <div class="search-bar">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="Cari produk..." 
-              class="search-input"
+            <svg
+              class="search-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
             >
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Cari produk..."
+              class="search-input"
+            />
           </div>
-          
+
           <div class="product-grid">
-            <div 
-              v-for="product in filteredProducts" 
-              :key="product.id" 
+            <div
+              v-for="product in filteredProducts"
+              :key="product.id"
               class="product-card"
               :class="{ 'low-stock': product.stock <= 5 }"
               @click="addToCart(product)"
             >
               <div class="product-info">
                 <h4>{{ product.name }}</h4>
-                <p class="product-price">Rp {{ formatNumber(product.price) }}</p>
-                <p class="product-stock" :class="{ 'low': product.stock <= 5 }">
+                <p class="product-price">
+                  Rp {{ formatNumber(product.price) }}
+                </p>
+                <p class="product-stock" :class="{ low: product.stock <= 5 }">
                   Stok: {{ product.stock }}
                 </p>
               </div>
@@ -69,7 +90,7 @@
                 <span>⚠️</span>
               </div>
             </div>
-            
+
             <div v-if="filteredProducts.length === 0" class="empty-products">
               Produk tidak ditemukan
             </div>
@@ -80,7 +101,13 @@
         <div class="cart-section">
           <div class="cart-header">
             <h3>Keranjang Belanja</h3>
-            <button v-if="cart.length > 0" class="clear-cart" @click="clearCart">Kosongkan</button>
+            <button
+              v-if="cart.length > 0"
+              class="clear-cart"
+              @click="clearCart"
+            >
+              Kosongkan
+            </button>
           </div>
 
           <div class="cart-items">
@@ -90,10 +117,16 @@
                 <p>Rp {{ formatNumber(item.price) }}</p>
               </div>
               <div class="item-actions">
-                <button class="qty-btn" @click="updateQuantity(item, -1)">-</button>
+                <button class="qty-btn" @click="updateQuantity(item, -1)">
+                  -
+                </button>
                 <span class="qty">{{ item.quantity }}</span>
-                <button class="qty-btn" @click="updateQuantity(item, 1)">+</button>
-                <button class="remove-btn" @click="removeFromCart(index)">✕</button>
+                <button class="qty-btn" @click="updateQuantity(item, 1)">
+                  +
+                </button>
+                <button class="remove-btn" @click="removeFromCart(index)">
+                  ✕
+                </button>
               </div>
               <div class="item-subtotal">
                 Rp {{ formatNumber(item.price * item.quantity) }}
@@ -101,8 +134,15 @@
             </div>
 
             <div v-if="cart.length === 0" class="empty-cart">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6M18 13l1.5 6M9 21h6M12 13v8"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6M18 13l1.5 6M9 21h6M12 13v8"
+                />
               </svg>
               <p>Keranjang kosong</p>
             </div>
@@ -111,25 +151,29 @@
           <div class="cart-total">
             <div class="total-row">
               <span>Total</span>
-              <span class="total-amount">Rp {{ formatNumber(totalAmount) }}</span>
+              <span class="total-amount"
+                >Rp {{ formatNumber(totalAmount) }}</span
+              >
             </div>
             <div class="total-row">
               <span>Pembayaran</span>
-              <input 
-                type="number" 
-                v-model.number="paymentAmount" 
+              <input
+                type="number"
+                v-model.number="paymentAmount"
                 class="payment-input"
                 placeholder="0"
-              >
+              />
             </div>
             <div class="total-row change">
               <span>Kembalian</span>
-              <span class="change-amount">Rp {{ formatNumber(changeAmount) }}</span>
+              <span class="change-amount"
+                >Rp {{ formatNumber(changeAmount) }}</span
+              >
             </div>
           </div>
 
-          <button 
-            class="btn-checkout" 
+          <button
+            class="btn-checkout"
             :disabled="cart.length === 0 || paymentAmount < totalAmount"
             @click="processTransaction"
           >
@@ -140,7 +184,11 @@
     </main>
 
     <!-- Buka Shift Modal -->
-    <div v-if="openShiftModal" class="modal-overlay" @click.self="openShiftModal = false">
+    <div
+      v-if="openShiftModal"
+      class="modal-overlay"
+      @click.self="openShiftModal = false"
+    >
       <div class="modal">
         <div class="modal-header">
           <h3>Buka Shift</h3>
@@ -148,22 +196,34 @@
         </div>
         <div class="modal-body">
           <label>Saldo Kas Awal</label>
-          <input 
-            type="number" 
-            v-model="openingCashInput" 
+          <input
+            type="number"
+            v-model="openingCashInput"
             class="modal-input"
             placeholder="Masukkan nominal kas awal"
-          >
+          />
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="openShiftModal = false">Batal</button>
-          <button class="btn-primary" @click="openShift" :disabled="!openingCashInput">Buka Shift</button>
+          <button class="btn-secondary" @click="openShiftModal = false">
+            Batal
+          </button>
+          <button
+            class="btn-primary"
+            @click="openShift"
+            :disabled="!openingCashInput"
+          >
+            Buka Shift
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Struk Modal -->
-    <div v-if="showReceipt" class="modal-overlay" @click.self="showReceipt = false">
+    <div
+      v-if="showReceipt"
+      class="modal-overlay"
+      @click.self="showReceipt = false"
+    >
       <div class="modal receipt-modal">
         <div class="modal-header">
           <h3>Struk Transaksi</h3>
@@ -174,14 +234,18 @@
             <h2>Nicky Frozen</h2>
             <p>Jl. Contoh No. 1, Yogyakarta</p>
             <p>Telp: 08123456789</p>
-            <hr>
+            <hr />
           </div>
           <div class="receipt-items">
-            <div v-for="item in lastTransaction.items" :key="item.id" class="receipt-item">
+            <div
+              v-for="item in lastTransaction.items"
+              :key="item.id"
+              class="receipt-item"
+            >
               <span>{{ item.name }} x{{ item.quantity }}</span>
               <span>Rp {{ formatNumber(item.price * item.quantity) }}</span>
             </div>
-            <hr>
+            <hr />
             <div class="receipt-total">
               <strong>Total</strong>
               <strong>Rp {{ formatNumber(lastTransaction.total) }}</strong>
@@ -194,7 +258,7 @@
               <span>Kembalian</span>
               <span>Rp {{ formatNumber(lastTransaction.change) }}</span>
             </div>
-            <hr>
+            <hr />
             <div class="receipt-footer">
               <p>Terima kasih!</p>
               <p>{{ new Date().toLocaleString() }}</p>
@@ -203,27 +267,37 @@
         </div>
         <div class="modal-footer">
           <button class="btn-primary" @click="printReceipt">Cetak Struk</button>
-          <button class="btn-secondary" @click="showReceipt = false">Tutup</button>
+          <button class="btn-secondary" @click="showReceipt = false">
+            Tutup
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Pending Sync Modal -->
-    <div v-if="showPendingModal" class="modal-overlay" @click.self="showPendingModal = false">
+    <div
+      v-if="showPendingModal"
+      class="modal-overlay"
+      @click.self="showPendingModal = false"
+    >
       <div class="modal">
         <div class="modal-header">
           <h3>Transaksi Pending (Offline)</h3>
           <button class="close-btn" @click="showPendingModal = false">✕</button>
         </div>
         <div class="modal-body">
-          <div v-for="(item, idx) in pendingTransactions" :key="idx" class="pending-item">
+          <div
+            v-for="(item, idx) in pendingTransactions"
+            :key="idx"
+            class="pending-item"
+          >
             <div>
               <strong>{{ item.items.length }} produk</strong>
               <p>Total: Rp {{ formatNumber(item.total) }}</p>
               <small>{{ new Date(item.created_at).toLocaleString() }}</small>
             </div>
             <div class="pending-status" :class="item.status">
-              {{ item.status === 'pending' ? 'Menunggu Sync' : 'Gagal' }}
+              {{ item.status === "pending" ? "Menunggu Sync" : "Gagal" }}
             </div>
           </div>
           <div v-if="pendingTransactions.length === 0" class="empty-state">
@@ -231,10 +305,16 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-primary" @click="syncPendingTransactions" :disabled="!isOnline">
+          <button
+            class="btn-primary"
+            @click="syncPendingTransactions"
+            :disabled="!isOnline"
+          >
             Sync Sekarang
           </button>
-          <button class="btn-secondary" @click="showPendingModal = false">Tutup</button>
+          <button class="btn-secondary" @click="showPendingModal = false">
+            Tutup
+          </button>
         </div>
       </div>
     </div>
@@ -242,120 +322,176 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import SidebarKasir from '../../components/SidebarKasir.vue'
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import SidebarKasir from "../../components/SidebarKasir.vue";
 
-const router = useRouter()
+const router = useRouter();
 
 // State
-const isOnline = ref(navigator.onLine)
-const shiftActive = ref(false)
-const openingCash = ref(0)
-const openingCashInput = ref(0)
-const cashierName = ref('Kasir Cabang Utama')
-const searchQuery = ref('')
-const paymentAmount = ref(0)
-const openShiftModal = ref(false)
-const showReceipt = ref(false)
-const showPendingModal = ref(false)
-const pendingCount = ref(0)
+const isOnline = ref(navigator.onLine);
+const shiftActive = ref(false);
+const openingCash = ref(0);
+const openingCashInput = ref(0);
+const cashierName = ref("Kasir Cabang Utama");
+const searchQuery = ref("");
+const paymentAmount = ref(0);
+const openShiftModal = ref(false);
+const showReceipt = ref(false);
+const showPendingModal = ref(false);
+const pendingCount = ref(0);
 
 // Cart
-const cart = ref([])
+const cart = ref([]);
 const lastTransaction = ref({
   items: [],
   total: 0,
   payment: 0,
-  change: 0
-})
+  change: 0,
+});
 
 // Pending transactions (offline)
-const pendingTransactions = ref([])
+const pendingTransactions = ref([]);
 
 // Products data
 const products = ref([
-  { id: 1, name: 'Nugget Ayam', price: 35000, stock: 45, category: 'Frozen', expired_date: '2025-12-31' },
-  { id: 2, name: 'Sosis Solo', price: 28000, stock: 32, category: 'Frozen', expired_date: '2025-11-30' },
-  { id: 3, name: 'Roti Bakar', price: 15000, stock: 18, category: 'Snack', expired_date: '2025-10-15' },
-  { id: 4, name: 'Kentang Goreng', price: 20000, stock: 28, category: 'Frozen', expired_date: '2025-12-20' },
-  { id: 5, name: 'Es Krim', price: 12000, stock: 52, category: 'Dessert', expired_date: '2026-01-15' },
-  { id: 6, name: 'Pizza Frozen', price: 55000, stock: 8, category: 'Frozen', expired_date: '2025-12-31' },
-  { id: 7, name: 'Dimsum', price: 25000, stock: 15, category: 'Frozen', expired_date: '2025-12-10' },
-  { id: 8, name: 'Cireng', price: 10000, stock: 40, category: 'Snack', expired_date: '2026-01-01' }
-])
+  {
+    id: 1,
+    name: "Nugget Ayam",
+    price: 35000,
+    stock: 45,
+    category: "Frozen",
+    expired_date: "2025-12-31",
+  },
+  {
+    id: 2,
+    name: "Sosis Solo",
+    price: 28000,
+    stock: 32,
+    category: "Frozen",
+    expired_date: "2025-11-30",
+  },
+  {
+    id: 3,
+    name: "Roti Bakar",
+    price: 15000,
+    stock: 18,
+    category: "Snack",
+    expired_date: "2025-10-15",
+  },
+  {
+    id: 4,
+    name: "Kentang Goreng",
+    price: 20000,
+    stock: 28,
+    category: "Frozen",
+    expired_date: "2025-12-20",
+  },
+  {
+    id: 5,
+    name: "Es Krim",
+    price: 12000,
+    stock: 52,
+    category: "Dessert",
+    expired_date: "2026-01-15",
+  },
+  {
+    id: 6,
+    name: "Pizza Frozen",
+    price: 55000,
+    stock: 8,
+    category: "Frozen",
+    expired_date: "2025-12-31",
+  },
+  {
+    id: 7,
+    name: "Dimsum",
+    price: 25000,
+    stock: 15,
+    category: "Frozen",
+    expired_date: "2025-12-10",
+  },
+  {
+    id: 8,
+    name: "Cireng",
+    price: 10000,
+    stock: 40,
+    category: "Snack",
+    expired_date: "2026-01-01",
+  },
+]);
 
 // Computed
 const cashierInitial = computed(() => {
-  return cashierName.value.charAt(0)
-})
+  return cashierName.value.charAt(0);
+});
 
 const filteredProducts = computed(() => {
-  if (!searchQuery.value) return products.value
-  return products.value.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-})
+  if (!searchQuery.value) return products.value;
+  return products.value.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
+  );
+});
 
 const totalAmount = computed(() => {
-  return cart.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-})
+  return cart.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
+});
 
 const changeAmount = computed(() => {
-  return paymentAmount.value - totalAmount.value
-})
+  return paymentAmount.value - totalAmount.value;
+});
 
 // Methods
 const formatNumber = (num) => {
-  return new Intl.NumberFormat('id-ID').format(num)
-}
+  return new Intl.NumberFormat("id-ID").format(num);
+};
 
 const addToCart = (product) => {
-  const existing = cart.value.find(item => item.id === product.id)
+  const existing = cart.value.find((item) => item.id === product.id);
   if (existing) {
-    existing.quantity++
+    existing.quantity++;
   } else {
     cart.value.push({
       id: product.id,
       name: product.name,
       price: product.price,
-      quantity: 1
-    })
+      quantity: 1,
+    });
   }
-}
+};
 
 const updateQuantity = (item, delta) => {
-  const newQty = item.quantity + delta
+  const newQty = item.quantity + delta;
   if (newQty <= 0) {
-    const index = cart.value.findIndex(i => i.id === item.id)
-    cart.value.splice(index, 1)
+    const index = cart.value.findIndex((i) => i.id === item.id);
+    cart.value.splice(index, 1);
   } else {
-    item.quantity = newQty
+    item.quantity = newQty;
   }
-}
+};
 
 const removeFromCart = (index) => {
-  cart.value.splice(index, 1)
-}
+  cart.value.splice(index, 1);
+};
 
 const clearCart = () => {
-  cart.value = []
-  paymentAmount.value = 0
-}
+  cart.value = [];
+  paymentAmount.value = 0;
+};
 
 const openShift = () => {
-  openingCash.value = openingCashInput.value
-  shiftActive.value = true
-  openShiftModal.value = false
+  openingCash.value = openingCashInput.value;
+  shiftActive.value = true;
+  openShiftModal.value = false;
   // Simpan ke localStorage agar SidebarKasir bisa membaca
-  localStorage.setItem('shift_active', 'true')
-  localStorage.setItem('opening_cash', openingCash.value.toString())
-  localStorage.setItem('shift_open_time', new Date().toLocaleString())
-}
+  localStorage.setItem("shift_active", "true");
+  localStorage.setItem("opening_cash", openingCash.value.toString());
+  localStorage.setItem("shift_open_time", new Date().toLocaleString());
+};
 
 const processTransaction = async () => {
-  if (cart.value.length === 0) return
-  if (paymentAmount.value < totalAmount.value) return
+  if (cart.value.length === 0) return;
+  if (paymentAmount.value < totalAmount.value) return;
 
   const transaction = {
     id: Date.now(),
@@ -363,100 +499,106 @@ const processTransaction = async () => {
     total: totalAmount.value,
     payment: paymentAmount.value,
     change: changeAmount.value,
-    created_at: new Date().toISOString()
-  }
+    created_at: new Date().toISOString(),
+  };
 
-  lastTransaction.value = transaction
+  lastTransaction.value = transaction;
 
   if (isOnline.value) {
-    await saveTransactionToServer(transaction)
+    await saveTransactionToServer(transaction);
   } else {
-    saveTransactionToLocal(transaction)
+    saveTransactionToLocal(transaction);
   }
 
-  updateLocalStock(transaction.items)
-  clearCart()
-  showReceipt.value = true
-}
+  updateLocalStock(transaction.items);
+  clearCart();
+  showReceipt.value = true;
+};
 
 const saveTransactionToServer = async (transaction) => {
-  console.log('Saving to server:', transaction)
-  await new Promise(resolve => setTimeout(resolve, 500))
-}
+  console.log("Saving to server:", transaction);
+  await new Promise((resolve) => setTimeout(resolve, 500));
+};
 
 const saveTransactionToLocal = (transaction) => {
-  const pending = JSON.parse(localStorage.getItem('pending_transactions') || '[]')
-  pending.push({ ...transaction, status: 'pending' })
-  localStorage.setItem('pending_transactions', JSON.stringify(pending))
-  pendingTransactions.value = pending
-  pendingCount.value = pending.length
-}
+  const pending = JSON.parse(
+    localStorage.getItem("pending_transactions") || "[]",
+  );
+  pending.push({ ...transaction, status: "pending" });
+  localStorage.setItem("pending_transactions", JSON.stringify(pending));
+  pendingTransactions.value = pending;
+  pendingCount.value = pending.length;
+};
 
 const updateLocalStock = (items) => {
-  items.forEach(item => {
-    const product = products.value.find(p => p.id === item.id)
+  items.forEach((item) => {
+    const product = products.value.find((p) => p.id === item.id);
     if (product) {
-      product.stock -= item.quantity
+      product.stock -= item.quantity;
     }
-  })
-}
+  });
+};
 
 const syncPendingTransactions = async () => {
-  if (!isOnline.value) return
-  
-  const pending = JSON.parse(localStorage.getItem('pending_transactions') || '[]')
+  if (!isOnline.value) return;
+
+  const pending = JSON.parse(
+    localStorage.getItem("pending_transactions") || "[]",
+  );
   for (const transaction of pending) {
-    await saveTransactionToServer(transaction)
+    await saveTransactionToServer(transaction);
   }
-  localStorage.removeItem('pending_transactions')
-  pendingTransactions.value = []
-  pendingCount.value = 0
-}
+  localStorage.removeItem("pending_transactions");
+  pendingTransactions.value = [];
+  pendingCount.value = 0;
+};
 
 const printReceipt = () => {
-  window.print()
-}
+  window.print();
+};
 
 const logout = () => {
-  localStorage.clear()
-  router.push('/login')
-}
+  localStorage.clear();
+  router.push("/login");
+};
 
 // Load state from localStorage
 const loadShiftState = () => {
-  const savedShiftActive = localStorage.getItem('shift_active')
-  const savedOpeningCash = localStorage.getItem('opening_cash')
-  if (savedShiftActive === 'true') {
-    shiftActive.value = true
-    openingCash.value = Number(savedOpeningCash) || 0
+  const savedShiftActive = localStorage.getItem("shift_active");
+  const savedOpeningCash = localStorage.getItem("opening_cash");
+  if (savedShiftActive === "true") {
+    shiftActive.value = true;
+    openingCash.value = Number(savedOpeningCash) || 0;
   }
-}
+};
 
 const loadPendingTransactions = () => {
-  const pending = JSON.parse(localStorage.getItem('pending_transactions') || '[]')
-  pendingTransactions.value = pending
-  pendingCount.value = pending.length
-}
+  const pending = JSON.parse(
+    localStorage.getItem("pending_transactions") || "[]",
+  );
+  pendingTransactions.value = pending;
+  pendingCount.value = pending.length;
+};
 
 // Connection status
 const updateOnlineStatus = () => {
-  isOnline.value = navigator.onLine
+  isOnline.value = navigator.onLine;
   if (isOnline.value && pendingCount.value > 0) {
-    syncPendingTransactions()
+    syncPendingTransactions();
   }
-}
+};
 
 onMounted(() => {
-  loadShiftState()
-  loadPendingTransactions()
-  window.addEventListener('online', updateOnlineStatus)
-  window.addEventListener('offline', updateOnlineStatus)
-})
+  loadShiftState();
+  loadPendingTransactions();
+  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("offline", updateOnlineStatus);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('online', updateOnlineStatus)
-  window.removeEventListener('offline', updateOnlineStatus)
-})
+  window.removeEventListener("online", updateOnlineStatus);
+  window.removeEventListener("offline", updateOnlineStatus);
+});
 </script>
 
 <style scoped>
@@ -482,12 +624,12 @@ onUnmounted(() => {
   background: white;
   padding: 1rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .page-title h1 {
   font-size: 1.25rem;
-  color: #1F3864;
+  color: #1f3864;
   margin-bottom: 0.25rem;
 }
 
@@ -524,7 +666,7 @@ onUnmounted(() => {
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: #2E75B6;
+  background: #2e75b6;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -603,7 +745,7 @@ onUnmounted(() => {
 
 .search-input:focus {
   outline: none;
-  border-color: #2E75B6;
+  border-color: #2e75b6;
 }
 
 .product-grid {
@@ -626,8 +768,8 @@ onUnmounted(() => {
 }
 
 .product-card:hover {
-  border-color: #2E75B6;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-color: #2e75b6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .product-card.low-stock {
@@ -641,7 +783,7 @@ onUnmounted(() => {
 
 .product-price {
   font-weight: bold;
-  color: #1F3864;
+  color: #1f3864;
   font-size: 0.875rem;
 }
 
@@ -794,7 +936,7 @@ onUnmounted(() => {
 .total-amount {
   font-weight: bold;
   font-size: 1.1rem;
-  color: #1F3864;
+  color: #1f3864;
 }
 
 .payment-input {
@@ -819,7 +961,7 @@ onUnmounted(() => {
 .btn-checkout {
   width: 100%;
   padding: 0.875rem;
-  background: #1F3864;
+  background: #1f3864;
   color: white;
   border: none;
   border-radius: 8px;
@@ -830,7 +972,7 @@ onUnmounted(() => {
 }
 
 .btn-checkout:hover:not(:disabled) {
-  background: #15284D;
+  background: #15284d;
 }
 
 .btn-checkout:disabled {
@@ -845,7 +987,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -894,7 +1036,7 @@ onUnmounted(() => {
 
 .btn-primary {
   padding: 0.5rem 1rem;
-  background: #1F3864;
+  background: #1f3864;
   color: white;
   border: none;
   border-radius: 6px;
@@ -944,7 +1086,9 @@ onUnmounted(() => {
   margin-bottom: 0.25rem;
 }
 
-.receipt-total, .receipt-payment, .receipt-change {
+.receipt-total,
+.receipt-payment,
+.receipt-change {
   display: flex;
   justify-content: space-between;
   margin: 0.5rem 0;
