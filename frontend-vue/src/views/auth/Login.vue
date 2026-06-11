@@ -21,7 +21,7 @@
           <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
-          <span>Mode Offline - Login akan menggunakan data lokal</span>
+          <span>Mode Offline - Tidak dapat terhubung ke server</span>
         </div>
 
         <!-- Error Alert -->
@@ -106,12 +106,12 @@
             <div class="demo-card" @click="fillDemoOwner">
               <p class="demo-role">👑 Owner</p>
               <p class="demo-email">owner@nicksfrozen.com</p>
-              <p class="demo-pass">password</p>
+              <p class="demo-pass">password123</p>
             </div>
             <div class="demo-card" @click="fillDemoKasir">
               <p class="demo-role">🛒 Kasir</p>
-              <p class="demo-email">kasir@nicksfrozen.com</p>
-              <p class="demo-pass">password</p>
+              <p class="demo-email">siti@nicksfrozen.com</p>
+              <p class="demo-pass">password123</p>
             </div>
           </div>
         </div>
@@ -128,6 +128,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/plugins/axios'
 
 const router = useRouter()
 
@@ -149,12 +150,12 @@ const errors = reactive({
 
 const fillDemoOwner = () => {
   form.email = 'owner@nicksfrozen.com'
-  form.password = 'password'
+  form.password = 'password123'
 }
 
 const fillDemoKasir = () => {
-  form.email = 'kasir@nicksfrozen.com'
-  form.password = 'password'
+  form.email = 'siti@nicksfrozen.com'
+  form.password = 'password123'
 }
 
 const validateForm = () => {
@@ -185,39 +186,47 @@ const handleLogin = async () => {
   errorMessage.value = ''
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Hit endpoint login
+    const response = await api.post('/login', {
+      email: form.email,
+      password: form.password,
+    })
 
-    const demoUsers = [
-      { email: 'owner@nicksfrozen.com', password: 'password', role: 'owner', name: 'Owner Nicky Frozen' },
-      { email: 'kasir@nicksfrozen.com', password: 'password', role: 'kasir', name: 'Kasir Cabang Utama' }
-    ]
+    const { token, user } = response.data
 
-    const user = demoUsers.find(u => u.email === form.email && u.password === form.password)
+    // Simpan token & data user
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
 
-    if (user) {
-      if (rememberMe.value) {
-        localStorage.setItem('remembered_email', form.email)
-      } else {
-        localStorage.removeItem('remembered_email')
-      }
-
-      localStorage.setItem('token', 'demo_token_' + Date.now())
-      localStorage.setItem('user', JSON.stringify({
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }))
-
-      if (user.role === 'owner') {
-        router.push('/dashboard')
-      } else {
-        router.push('/pos')
-      }
+    // Simpan email jika remember me
+    if (rememberMe.value) {
+      localStorage.setItem('remembered_email', form.email)
     } else {
-      errorMessage.value = 'Email atau password salah'
+      localStorage.removeItem('remembered_email')
     }
+
+    // Redirect berdasarkan role
+    if (user.role === 'owner') {
+      router.push('/dashboard')
+    } else {
+      router.push('/pos')
+    }
+
   } catch (error) {
-    errorMessage.value = 'Terjadi kesalahan, silakan coba lagi'
+    if (error.response) {
+      const status = error.response.status
+      if (status === 401 || status === 422) {
+        errorMessage.value = 'Email atau password salah'
+      } else if (status === 403) {
+        errorMessage.value = 'Akun Anda tidak aktif. Hubungi administrator.'
+      } else {
+        errorMessage.value = 'Terjadi kesalahan server, silakan coba lagi'
+      }
+    } else if (error.request) {
+      errorMessage.value = 'Tidak dapat terhubung ke server. Periksa koneksi Anda.'
+    } else {
+      errorMessage.value = 'Terjadi kesalahan, silakan coba lagi'
+    }
   } finally {
     isLoading.value = false
   }
@@ -228,11 +237,24 @@ const updateOnlineStatus = () => {
 }
 
 onMounted(() => {
+  const token = localStorage.getItem('token')
+  const user = localStorage.getItem('user')
+  if (token && user) {
+    const parsedUser = JSON.parse(user)
+    if (parsedUser.role === 'owner') {
+      router.push('/dashboard')
+    } else {
+      router.push('/pos')
+    }
+    return
+  }
+
   const savedEmail = localStorage.getItem('remembered_email')
   if (savedEmail) {
     form.email = savedEmail
     rememberMe.value = true
   }
+
   window.addEventListener('online', updateOnlineStatus)
   window.addEventListener('offline', updateOnlineStatus)
 })
