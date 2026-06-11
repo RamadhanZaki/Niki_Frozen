@@ -1,14 +1,16 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+    'Accept': 'application/json',
+  },
+  withCredentials: true,
+  timeout: 5000, // 5 detik timeout — kalau server mati langsung gagal
 })
 
-// Request interceptor
+// Sertakan token Bearer di setiap request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
@@ -17,21 +19,14 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
-// Response interceptor
+// JANGAN redirect di sini — biarkan router guard yang handle
+// Cukup reject error agar catch di verifyToken() bisa menangkap
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
 export default api

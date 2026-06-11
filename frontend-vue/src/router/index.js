@@ -1,16 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/auth/Login.vue'
+import api from '../services/axios'
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/login'
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login
-  },
+  { path: '/', redirect: '/login' },
+  { path: '/login', name: 'Login', component: Login },
   {
     path: '/dashboard',
     name: 'Dashboard',
@@ -48,10 +42,10 @@ const routes = [
     meta: { requiresAuth: true, role: 'kasir' }
   },
   {
-  path: '/products',
-  name: 'CashierProducts',
-  component: () => import('../views/cashier/Products.vue'),
-  meta: { requiresAuth: true, role: 'kasir' }
+    path: '/products',
+    name: 'CashierProducts',
+    component: () => import('../views/cashier/Products.vue'),
+    meta: { requiresAuth: true, role: 'kasir' }
   },
   {
     path: '/shift',
@@ -66,10 +60,10 @@ const routes = [
     meta: { requiresAuth: true, role: 'kasir' }
   },
   {
-  path: '/offline-queue',
-  name: 'OfflineQueue',
-  component: () => import('../views/cashier/OfflineQueue.vue'),
-  meta: { requiresAuth: true, role: 'kasir' }
+    path: '/offline-queue',
+    name: 'OfflineQueue',
+    component: () => import('../views/cashier/OfflineQueue.vue'),
+    meta: { requiresAuth: true, role: 'kasir' }
   }
 ]
 
@@ -78,38 +72,57 @@ const router = createRouter({
   routes
 })
 
-// Navigation guard
-router.beforeEach((to, from, next) => {
+async function verifyToken() {
+  try {
+    const res = await api.get('/me')
+    const user = res.data.user
+    localStorage.setItem('user', JSON.stringify(user))
+    console.log('[Auth] Token valid, user:', user.role)
+    return user
+  } catch (err) {
+    console.warn('[Auth] Token tidak valid atau server mati:', err.message)
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    return null
+  }
+}
+
+router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  console.log('[Router] Navigasi ke:', to.path, '| token ada:', !!token)
 
   if (to.meta.requiresAuth) {
     if (!token) {
-      next('/login')
-    } else if (to.meta.role && user.role !== to.meta.role) {
-      if (user.role === 'owner') {
-        next('/dashboard')
-      } else if (user.role === 'kasir') {
-        next('/pos')
-      } else {
-        next('/login')
-      }
-    } else {
-      next()
+      console.log('[Router] Tidak ada token → /login')
+      return next('/login')
     }
-  } else {
-    if (token && to.path === '/login') {
-      if (user.role === 'owner') {
-        next('/dashboard')
-      } else if (user.role === 'kasir') {
-        next('/pos')
-      } else {
-        next()
-      }
-    } else {
-      next()
+
+    const user = await verifyToken()
+
+    if (!user) {
+      console.log('[Router] Token tidak valid → /login')
+      return next('/login')
+    }
+
+    if (to.meta.role && user.role !== to.meta.role) {
+      const redirect = user.role === 'owner' ? '/dashboard' : '/pos'
+      console.log('[Router] Role salah → redirect ke', redirect)
+      return next(redirect)
+    }
+
+    return next()
+  }
+
+  if (to.path === '/login' && token) {
+    const user = await verifyToken()
+    if (user) {
+      const redirect = user.role === 'owner' ? '/dashboard' : '/pos'
+      console.log('[Router] Sudah login → redirect ke', redirect)
+      return next(redirect)
     }
   }
+
+  next()
 })
 
 export default router
