@@ -69,8 +69,7 @@
         </div>
         <select v-model="branchFilter" class="filter-select">
           <option value="all">Semua Cabang</option>
-          <option value="1">Cabang Utama</option>
-          <option value="2">Cabang Kedua</option>
+          <option v-for="b in branches" :key="b.id" :value="b.id.toString()">{{ b.name }}</option>
         </select>
         <select v-model="stockFilter" class="filter-select">
           <option value="all">Semua Stok</option>
@@ -128,7 +127,7 @@
                     >{{ getStockStatusText(product.stock) }}</span
                   >
                 </td>
-                <td class="last-update">{{ product.last_update || "-" }}</td>
+                <td class="last-update">{{ product.updated_at || "-" }}</td>
                 <td class="actions">
                   <button
                     class="action-btn add"
@@ -255,8 +254,7 @@
           <div class="form-group">
             <label>Cabang</label
             ><select v-model="stockForm.branch_id" class="modal-input">
-              <option value="1">Cabang Utama</option>
-              <option value="2">Cabang Kedua</option>
+              <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
             </select>
           </div>
           <div class="form-row">
@@ -387,9 +385,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, watch } from "vue";
 import SidebarOwner from "../../components/SidebarOwner.vue";
+import api from "../../services/axios.js";
 
 const searchQuery = ref("");
 const branchFilter = ref("all");
@@ -406,102 +404,25 @@ const selectedProduct = ref(null);
 const showAlert = ref(false);
 const alertMessage = ref("");
 const alertType = ref("success");
-const userName = ref("Owner Nicky Frozen");
+const userName = ref("Owner");
+const isLoading = ref(false);
 
+// Stats dari API
+const statTotalProducts = ref(0);
+const statLowStock = ref(0);
+const statCriticalStock = ref(0);
+const statTotalValue = ref(0);
+
+const branches = ref([]);
 const stockForm = ref({ product_id: "", branch_id: 1, quantity: 0, note: "" });
-
-const products = ref([
-  {
-    id: 1,
-    name: "Nugget Ayam",
-    category: "Frozen",
-    price: 35000,
-    stock: 45,
-    branch_id: 1,
-    last_update: "2026-05-25 10:30",
-  },
-  {
-    id: 2,
-    name: "Sosis Solo",
-    category: "Frozen",
-    price: 28000,
-    stock: 8,
-    branch_id: 1,
-    last_update: "2026-05-24 14:20",
-  },
-  {
-    id: 3,
-    name: "Roti Bakar",
-    category: "Snack",
-    price: 15000,
-    stock: 3,
-    branch_id: 1,
-    last_update: "2026-05-23 09:15",
-  },
-  {
-    id: 4,
-    name: "Kentang Goreng",
-    category: "Frozen",
-    price: 20000,
-    stock: 28,
-    branch_id: 1,
-    last_update: "2026-05-25 08:00",
-  },
-  {
-    id: 5,
-    name: "Es Krim",
-    category: "Dessert",
-    price: 12000,
-    stock: 52,
-    branch_id: 2,
-    last_update: "2026-05-24 16:45",
-  },
-  {
-    id: 6,
-    name: "Pizza Frozen",
-    category: "Frozen",
-    price: 55000,
-    stock: 0,
-    branch_id: 2,
-    last_update: "2026-05-20 11:00",
-  },
-  {
-    id: 7,
-    name: "Dimsum",
-    category: "Frozen",
-    price: 25000,
-    stock: 15,
-    branch_id: 1,
-    last_update: "2026-05-25 13:00",
-  },
-  {
-    id: 8,
-    name: "Cireng",
-    category: "Snack",
-    price: 10000,
-    stock: 40,
-    branch_id: 2,
-    last_update: "2026-05-24 10:00",
-  },
-]);
-
-const stockHistory = ref([
-  {
-    date: "2026-05-25 10:30",
-    type: "in",
-    quantity: 20,
-    before_stock: 25,
-    after_stock: 45,
-    note: "Restock dari supplier",
-    user: "Owner",
-  },
-]);
+const products = ref([]);
+const stockHistory = ref([]);
 
 const userInitial = computed(() => userName.value.charAt(0));
 const getProductStock = (id) =>
   products.value.find((p) => p.id === id)?.stock || 0;
 const newStockValue = computed(
-  () => getProductStock(stockForm.value.product_id) + stockForm.value.quantity,
+  () => getProductStock(stockForm.value.product_id) + Number(stockForm.value.quantity),
 );
 
 const filteredProducts = computed(() => {
@@ -533,18 +454,10 @@ const filteredProducts = computed(() => {
   return result;
 });
 
-const totalProducts = computed(() => filteredProducts.value.length);
-const lowStockCount = computed(
-  () =>
-    filteredProducts.value.filter((p) => p.stock > 0 && p.stock <= 10).length,
-);
-const criticalStockCount = computed(
-  () =>
-    filteredProducts.value.filter((p) => p.stock > 0 && p.stock <= 5).length,
-);
-const totalStockValue = computed(() =>
-  filteredProducts.value.reduce((s, p) => s + p.price * p.stock, 0),
-);
+const totalProducts = computed(() => statTotalProducts.value);
+const lowStockCount = computed(() => statLowStock.value);
+const criticalStockCount = computed(() => statCriticalStock.value);
+const totalStockValue = computed(() => statTotalValue.value);
 const totalPages = computed(() =>
   Math.ceil(filteredProducts.value.length / itemsPerPage.value),
 );
@@ -605,61 +518,66 @@ const viewHistory = (product) => {
 const closeModal = () => {
   showAddModal.value = false;
 };
-const saveAdjustment = () => {
-  if (!currentProduct.value) return;
-  const idx = products.value.findIndex((p) => p.id === currentProduct.value.id);
-  if (idx !== -1) {
-    const oldStock = products.value[idx].stock;
-    const newStock =
-      adjustType.value === "add"
-        ? oldStock + adjustQuantity.value
-        : oldStock - adjustQuantity.value;
-    products.value[idx].stock = newStock;
-    products.value[idx].last_update = new Date().toLocaleString();
-    stockHistory.value.unshift({
-      date: new Date().toLocaleString(),
-      type: adjustType.value === "add" ? "in" : "out",
+
+const saveAdjustment = async () => {
+  if (!currentProduct.value || adjustQuantity.value <= 0) return;
+  try {
+    const res = await api.post("/stocks/adjust", {
+      product_id: currentProduct.value.id,
+      type: adjustType.value,
       quantity: adjustQuantity.value,
-      before_stock: oldStock,
-      after_stock: newStock,
-      note:
-        adjustNote.value ||
-        (adjustType.value === "add" ? "Penambahan stok" : "Pengurangan stok"),
-      user: "Owner",
     });
+    // update produk di list
+    const idx = products.value.findIndex((p) => p.id === currentProduct.value.id);
+    if (idx !== -1) products.value[idx] = res.data.product;
     showAlertMessage(
       `Stok ${adjustType.value === "add" ? "ditambahkan" : "dikurangi"} ${adjustQuantity.value} pcs`,
       "success",
     );
+  } catch (err) {
+    showAlertMessage(err.response?.data?.message || "Gagal mengubah stok.", "error");
   }
   showAdjustModal.value = false;
   currentProduct.value = null;
   adjustQuantity.value = 0;
 };
 
-const addStock = () => {
-  const product = products.value.find(
-    (p) => p.id === stockForm.value.product_id,
-  );
-  if (product) {
-    const oldStock = product.stock;
-    product.stock += stockForm.value.quantity;
-    product.last_update = new Date().toLocaleString();
-    stockHistory.value.unshift({
-      date: new Date().toLocaleString(),
-      type: "in",
+const addStock = async () => {
+  if (!stockForm.value.product_id || stockForm.value.quantity <= 0) return;
+  try {
+    const res = await api.post("/stocks", {
+      product_id: stockForm.value.product_id,
       quantity: stockForm.value.quantity,
-      before_stock: oldStock,
-      after_stock: product.stock,
-      note: stockForm.value.note || "Restock",
-      user: "Owner",
     });
-    showAlertMessage(
-      `Berhasil tambah stok ${product.name} ${stockForm.value.quantity} pcs`,
-      "success",
-    );
+    const idx = products.value.findIndex((p) => p.id === res.data.product.id);
+    if (idx !== -1) products.value[idx] = res.data.product;
+    showAlertMessage(res.data.message, "success");
+  } catch (err) {
+    showAlertMessage(err.response?.data?.message || "Gagal menambah stok.", "error");
   }
   closeModal();
+};
+
+const fetchStocks = async () => {
+  isLoading.value = true;
+  try {
+    const params = {};
+    if (searchQuery.value) params.search = searchQuery.value;
+    if (branchFilter.value !== "all") params.branch_id = branchFilter.value;
+    if (stockFilter.value !== "all") params.stock_filter = stockFilter.value;
+
+    const res = await api.get("/stocks", { params });
+    products.value         = res.data.products;
+    branches.value         = res.data.branches;
+    statTotalProducts.value = res.data.total_products;
+    statLowStock.value      = res.data.low_stock;
+    statCriticalStock.value = res.data.critical_stock;
+    statTotalValue.value    = res.data.total_value;
+  } catch (err) {
+    showAlertMessage("Gagal memuat data stok.", "error");
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const exportData = () => showAlertMessage("Data berhasil diekspor!", "success");
@@ -667,18 +585,21 @@ const showAlertMessage = (msg, type) => {
   alertMessage.value = msg;
   alertType.value = type;
   showAlert.value = true;
-  setTimeout(() => {
-    showAlert.value = false;
-  }, 3000);
+  setTimeout(() => { showAlert.value = false; }, 3000);
 };
-const resetPage = () => {
-  currentPage.value = 1;
-};
-watch([searchQuery, branchFilter, stockFilter], () => resetPage());
+const resetPage = () => { currentPage.value = 1; };
+watch([branchFilter, stockFilter], () => { resetPage(); fetchStocks(); });
+watch(searchQuery, () => {
+  resetPage();
+  // debounce sederhana
+  clearTimeout(window._stockSearchTimeout);
+  window._stockSearchTimeout = setTimeout(fetchStocks, 400);
+});
 
 onMounted(() => {
-  const saved = localStorage.getItem("stocks");
-  if (saved) products.value = JSON.parse(saved);
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  if (user.name) userName.value = user.name;
+  fetchStocks();
 });
 </script>
 
