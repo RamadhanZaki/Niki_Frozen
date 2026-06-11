@@ -29,8 +29,7 @@
           <label>Cabang</label>
           <select v-model="selectedBranch" class="filter-select">
             <option value="all">Semua Cabang</option>
-            <option value="1">Cabang Utama</option>
-            <option value="2">Cabang Kedua</option>
+            <option v-for="b in branches" :key="b.id" :value="b.id.toString()">{{ b.name }}</option>
           </select>
         </div>
         <div class="filter-group">
@@ -64,6 +63,11 @@
           </svg>
           <span>Export PDF</span>
         </button>
+      </div>
+
+      <!-- Loading indicator -->
+      <div v-if="isLoading" style="text-align:center;padding:2rem;color:#6b7280;font-size:0.875rem;">
+        ⏳ Memuat data laporan...
       </div>
 
       <!-- Summary Cards -->
@@ -243,197 +247,66 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import SidebarOwner from "../../components/SidebarOwner.vue";
+import api from "../../services/axios.js";
+import {
+  Chart,
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+  Filler,
+  BarController,
+  LineController,
+} from "chart.js";
+
+Chart.register(
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+  Filler,
+  BarController,
+  LineController,
+);
 
 const router = useRouter();
 
 // Reactive state
-const isOnline = ref(navigator.onLine);
+const isOnline       = ref(navigator.onLine);
 const selectedBranch = ref("all");
-const period = ref("week");
-const startDate = ref("");
-const endDate = ref("");
-const chartType = ref("bar");
-const currentPage = ref(1);
-const itemsPerPage = ref(10);
-let revenueChart = null;
+const period         = ref("week");
+const startDate      = ref("");
+const endDate        = ref("");
+const chartType      = ref("bar");
+const currentPage    = ref(1);
+const itemsPerPage   = ref(10);
+const isLoading      = ref(false);
+let revenueChart     = null;
 
-// Dummy data for reports
-const allReports = ref([
-  {
-    date: "2026-05-25",
-    branch_id: 1,
-    branch_name: "Cabang Utama",
-    revenue: 3850000,
-    transactions: 142,
-    average: 27113,
-    profit: 962500,
-  },
-  {
-    date: "2026-05-25",
-    branch_id: 2,
-    branch_name: "Cabang Kedua",
-    revenue: 2940000,
-    transactions: 98,
-    average: 30000,
-    profit: 735000,
-  },
-  {
-    date: "2026-05-24",
-    branch_id: 1,
-    branch_name: "Cabang Utama",
-    revenue: 4200000,
-    transactions: 156,
-    average: 26923,
-    profit: 1050000,
-  },
-  {
-    date: "2026-05-24",
-    branch_id: 2,
-    branch_name: "Cabang Kedua",
-    revenue: 3100000,
-    transactions: 103,
-    average: 30097,
-    profit: 775000,
-  },
-  {
-    date: "2026-05-23",
-    branch_id: 1,
-    branch_name: "Cabang Utama",
-    revenue: 3980000,
-    transactions: 148,
-    average: 26892,
-    profit: 995000,
-  },
-  {
-    date: "2026-05-23",
-    branch_id: 2,
-    branch_name: "Cabang Kedua",
-    revenue: 2870000,
-    transactions: 95,
-    average: 30211,
-    profit: 717500,
-  },
-  {
-    date: "2026-05-22",
-    branch_id: 1,
-    branch_name: "Cabang Utama",
-    revenue: 4100000,
-    transactions: 152,
-    average: 26974,
-    profit: 1025000,
-  },
-  {
-    date: "2026-05-22",
-    branch_id: 2,
-    branch_name: "Cabang Kedua",
-    revenue: 3050000,
-    transactions: 101,
-    average: 30198,
-    profit: 762500,
-  },
-  {
-    date: "2026-05-21",
-    branch_id: 1,
-    branch_name: "Cabang Utama",
-    revenue: 3900000,
-    transactions: 145,
-    average: 26897,
-    profit: 975000,
-  },
-  {
-    date: "2026-05-21",
-    branch_id: 2,
-    branch_name: "Cabang Kedua",
-    revenue: 2980000,
-    transactions: 99,
-    average: 30101,
-    profit: 745000,
-  },
-]);
-
-// Helper: filter reports by branch and date range
-const filteredReports = computed(() => {
-  let reports = [...allReports.value];
-
-  // Filter by branch
-  if (selectedBranch.value !== "all") {
-    reports = reports.filter(
-      (r) => r.branch_id.toString() === selectedBranch.value,
-    );
-  }
-
-  // Filter by date range based on period
-  const today = new Date();
-  let start = null;
-  let end = null;
-
-  if (period.value === "today") {
-    start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    end = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-  } else if (period.value === "week") {
-    // Get Monday of current week
-    const day = today.getDay();
-    const diffToMonday = day === 0 ? 6 : day - 1;
-    start = new Date(today);
-    start.setDate(today.getDate() - diffToMonday);
-    start.setHours(0, 0, 0, 0);
-    end = new Date(today);
-    end.setHours(23, 59, 59, 999);
-  } else if (period.value === "month") {
-    start = new Date(today.getFullYear(), today.getMonth(), 1);
-    end = new Date(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
-    );
-  } else if (period.value === "custom") {
-    if (startDate.value && endDate.value) {
-      start = new Date(startDate.value);
-      start.setHours(0, 0, 0, 0);
-      end = new Date(endDate.value);
-      end.setHours(23, 59, 59, 999);
-    }
-  }
-
-  if (start && end) {
-    reports = reports.filter((r) => {
-      const rDate = new Date(r.date);
-      return rDate >= start && rDate <= end;
-    });
-  }
-
-  // Sort by date descending
-  reports.sort((a, b) => new Date(b.date) - new Date(a.date));
-  return reports;
+// Data dari API
+const allReports  = ref([]);
+const branches    = ref([]);
+const summaryData = ref({
+  total_revenue: 0,
+  total_transactions: 0,
+  net_profit: 0,
+  average_transaction: 0,
 });
 
-// Summary calculations
-const totalRevenue = computed(() =>
-  filteredReports.value.reduce((sum, r) => sum + r.revenue, 0),
-);
-const totalTransactions = computed(() =>
-  filteredReports.value.reduce((sum, r) => sum + r.transactions, 0),
-);
-const netProfit = computed(() =>
-  filteredReports.value.reduce((sum, r) => sum + r.profit, 0),
-);
-const averageTransaction = computed(() =>
-  totalTransactions.value === 0
-    ? 0
-    : totalRevenue.value / totalTransactions.value,
-);
+// Computed dari summaryData (server sudah hitung)
+const totalRevenue       = computed(() => summaryData.value.total_revenue);
+const totalTransactions  = computed(() => summaryData.value.total_transactions);
+const netProfit          = computed(() => summaryData.value.net_profit);
+const averageTransaction = computed(() => summaryData.value.average_transaction);
+
+// Filter lokal hanya untuk pagination & chart (data sudah difilter server)
+const filteredReports = computed(() => allReports.value);
 
 // Pagination
 const totalPages = computed(() =>
@@ -441,37 +314,51 @@ const totalPages = computed(() =>
 );
 const paginatedReports = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return filteredReports.value.slice(start, end);
+  return filteredReports.value.slice(start, start + itemsPerPage.value);
 });
 
-// User initial
-const userName = ref("Owner Nicky Frozen");
+const userName    = ref("Owner");
 const userInitial = computed(() => userName.value.charAt(0));
 
-// Methods
-const formatNumber = (num) => new Intl.NumberFormat("id-ID").format(num);
-const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("id-ID");
+// Helpers
+const formatNumber = (num) => new Intl.NumberFormat("id-ID").format(Math.round(num));
+const formatDate   = (dateStr) => new Date(dateStr).toLocaleDateString("id-ID");
 
-const applyFilter = () => {
-  currentPage.value = 1;
-  renderChart();
+// Fetch data dari backend
+const fetchReports = async () => {
+  isLoading.value = true;
+  try {
+    const params = { period: period.value, branch_id: selectedBranch.value };
+    if (period.value === "custom") {
+      params.start_date = startDate.value;
+      params.end_date   = endDate.value;
+    }
+    const res = await api.get("/reports", { params });
+    allReports.value  = res.data.reports  ?? [];
+    summaryData.value = res.data.summary  ?? summaryData.value;
+    branches.value    = res.data.branches ?? [];
+    currentPage.value = 1;
+    await nextTick();
+    renderChart();
+  } catch (err) {
+    console.error("Gagal memuat laporan:", err);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
-const refreshData = () => renderChart();
+const applyFilter = () => fetchReports();
+const refreshData = () => fetchReports();
 
 const exportPDF = () => {
-  alert("Fitur ekspor PDF akan segera tersedia. (Simulasi)");
+  alert("Fitur ekspor PDF akan segera tersedia.");
 };
 
 const renderChart = async () => {
   if (revenueChart) revenueChart.destroy();
-
-  // Wait for DOM update
   await nextTick();
   const canvas = revenueChartCanvas.value;
   if (!canvas) return;
-
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
@@ -482,81 +369,59 @@ const renderChart = async () => {
     grouped[date] = (grouped[date] || 0) + r.revenue;
   });
   const labels = Object.keys(grouped).sort();
-  const data = labels.map((l) => grouped[l]);
+  const data   = labels.map((l) => grouped[l]);
 
   revenueChart = new Chart(ctx, {
     type: chartType.value,
     data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Pendapatan (Rp)",
-          data: data,
-          backgroundColor: "rgba(46, 117, 182, 0.5)",
-          borderColor: "#1F3864",
-          borderWidth: 2,
-          tension: 0.3,
-          fill: true,
-        },
-      ],
+      labels,
+      datasets: [{
+        label: "Pendapatan (Rp)",
+        data,
+        backgroundColor: "rgba(46, 117, 182, 0.5)",
+        borderColor: "#1F3864",
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        tooltip: {
-          callbacks: {
-            label: (ctx) => `Rp ${formatNumber(ctx.raw)}`,
-          },
-        },
+        tooltip: { callbacks: { label: (c) => `Rp ${formatNumber(c.raw)}` } },
       },
-      scales: {
-        y: {
-          ticks: {
-            callback: (val) => "Rp " + formatNumber(val),
-          },
-        },
-      },
+      scales: { y: { ticks: { callback: (val) => "Rp " + formatNumber(val) } } },
     },
   });
 };
 
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
-};
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-};
+const prevPage = () => { if (currentPage.value > 1) currentPage.value--; };
+const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++; };
 
-// Watch for changes that affect chart
-watch([selectedBranch, period, startDate, endDate, chartType], () =>
-  applyFilter(),
-);
+watch([chartType], () => renderChart());
 
-// Online status
-const updateOnlineStatus = () => {
-  isOnline.value = navigator.onLine;
-};
-
-// Chart canvas ref
+const updateOnlineStatus = () => { isOnline.value = navigator.onLine; };
 const revenueChartCanvas = ref(null);
 
 onMounted(() => {
-  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("online",  updateOnlineStatus);
   window.addEventListener("offline", updateOnlineStatus);
 
-  // Set default custom dates (7 days range)
-  const today = new Date();
+  const today   = new Date();
   const weekAgo = new Date(today);
   weekAgo.setDate(today.getDate() - 7);
   startDate.value = weekAgo.toISOString().split("T")[0];
-  endDate.value = today.toISOString().split("T")[0];
+  endDate.value   = today.toISOString().split("T")[0];
 
-  renderChart();
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  if (user.name) userName.value = user.name;
+
+  fetchReports();
 });
 
 onUnmounted(() => {
-  window.removeEventListener("online", updateOnlineStatus);
+  window.removeEventListener("online",  updateOnlineStatus);
   window.removeEventListener("offline", updateOnlineStatus);
   if (revenueChart) revenueChart.destroy();
 });

@@ -6,6 +6,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\ShiftController;
 
 Route::get('/test', fn() => response()->json(['message' => 'Backend Laravel berjalan!']));
 
@@ -27,6 +30,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard (owner only)
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Reports (owner only)
+    Route::get('/reports', [ReportController::class, 'index']);
+
+    // Branches (owner only)
+    Route::get('/branches',              [BranchController::class, 'index']);
+    Route::post('/branches',             [BranchController::class, 'store']);
+    Route::put('/branches/{branch}',     [BranchController::class, 'update']);
+    Route::delete('/branches/{branch}',  [BranchController::class, 'destroy']);
+
+    // Shifts (owner only - view)
+    Route::get('/shifts', [ShiftController::class, 'index']);
 
     // Products
     Route::get('/products',              [ProductController::class, 'index']);

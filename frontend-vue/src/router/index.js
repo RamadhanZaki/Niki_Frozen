@@ -36,6 +36,18 @@ const routes = [
     meta: { requiresAuth: true, role: 'owner' }
   },
   {
+    path: '/admin/branches',
+    name: 'Branches',
+    component: () => import('../views/owner/Branches.vue'),
+    meta: { requiresAuth: true, role: 'owner' }
+  },
+  {
+    path: '/admin/shifts',
+    name: 'Shifts',
+    component: () => import('../views/owner/Shifts.vue'),
+    meta: { requiresAuth: true, role: 'owner' }
+  },
+  {
     path: '/pos',
     name: 'POS',
     component: () => import('../views/cashier/Pos.vue'),

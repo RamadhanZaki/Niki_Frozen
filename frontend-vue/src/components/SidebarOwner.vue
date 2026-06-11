@@ -13,106 +13,65 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a
-        href="#"
-        class="nav-item"
-        :class="{ active: isActive('/dashboard') }"
-        @click.prevent="navigate('/dashboard')"
-      >
-        <svg
-          class="nav-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-          />
+      <!-- Dashboard -->
+      <a href="#" class="nav-item" :class="{ active: isActive('/dashboard') }" @click.prevent="navigate('/dashboard')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
         <span>Dashboard</span>
       </a>
-      <a
-        href="#"
-        class="nav-item"
-        :class="{ active: isActive('/admin/products') }"
-        @click.prevent="navigate('/admin/products')"
-      >
-        <svg
-          class="nav-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-          />
+
+      <!-- Produk -->
+      <a href="#" class="nav-item" :class="{ active: isActive('/admin/products') }" @click.prevent="navigate('/admin/products')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
         <span>Produk</span>
       </a>
-      <a
-        href="#"
-        class="nav-item"
-        :class="{ active: isActive('/admin/stocks') }"
-        @click.prevent="navigate('/admin/stocks')"
-      >
-        <svg
-          class="nav-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+
+      <!-- Stok -->
+      <a href="#" class="nav-item" :class="{ active: isActive('/admin/stocks') }" @click.prevent="navigate('/admin/stocks')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
         </svg>
         <span>Stok</span>
       </a>
-      <a
-        href="#"
-        class="nav-item"
-        :class="{ active: isActive('/admin/reports') }"
-        @click.prevent="navigate('/admin/reports')"
-      >
-        <svg
-          class="nav-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-          />
+
+      <!-- Laporan -->
+      <a href="#" class="nav-item" :class="{ active: isActive('/admin/reports') }" @click.prevent="navigate('/admin/reports')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
         <span>Laporan</span>
       </a>
-      <a
-        href="#"
-        class="nav-item"
-        :class="{ active: isActive('/admin/users') }"
-        @click.prevent="navigate('/admin/users')"
-      >
-        <svg
-          class="nav-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-          />
+
+      <!-- Pengguna -->
+      <a href="#" class="nav-item" :class="{ active: isActive('/admin/users') }" @click.prevent="navigate('/admin/users')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
         <span>Pengguna</span>
+      </a>
+
+      <!-- Cabang (BARU) -->
+      <a href="#" class="nav-item" :class="{ active: isActive('/admin/branches') }" @click.prevent="navigate('/admin/branches')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <span>Cabang</span>
+      </a>
+
+      <!-- Shift Kasir (BARU) -->
+      <a href="#" class="nav-item" :class="{ active: isActive('/admin/shifts') }" @click.prevent="navigate('/admin/shifts')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Shift Kasir</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
-      <div
-        class="connection-status"
-        :class="{ online: isOnline, offline: !isOnline }"
-      >
+      <div class="connection-status" :class="{ online: isOnline, offline: !isOnline }">
         <span class="status-dot"></span>
         <span>{{ isOnline ? "Online" : "Offline" }}</span>
       </div>
@@ -126,16 +85,8 @@
         </div>
       </div>
       <button @click="handleLogout" class="logout-btn">
-        <svg
-          class="nav-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-          />
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
         <span>Logout</span>
       </button>
@@ -148,43 +99,33 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
-const route = useRoute();
+const route  = useRoute();
 
 const isOnline = ref(navigator.onLine);
 const userName = ref("Owner Nicky Frozen");
 
-const userInitial = computed(() => {
-  return userName.value.charAt(0);
-});
+const userInitial = computed(() => userName.value.charAt(0));
 
-const isActive = (path) => {
-  return route.path === path;
-};
+const isActive = (path) => route.path === path;
 
-const navigate = (path) => {
-  router.push(path);
-};
+const navigate = (path) => router.push(path);
 
 const handleLogout = () => {
   localStorage.clear();
   router.push("/login");
 };
 
-const updateOnlineStatus = () => {
-  isOnline.value = navigator.onLine;
-};
+const updateOnlineStatus = () => { isOnline.value = navigator.onLine; };
 
 onMounted(() => {
-  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("online",  updateOnlineStatus);
   window.addEventListener("offline", updateOnlineStatus);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  if (user.name) {
-    userName.value = user.name;
-  }
+  if (user.name) userName.value = user.name;
 });
 
 onUnmounted(() => {
-  window.removeEventListener("online", updateOnlineStatus);
+  window.removeEventListener("online",  updateOnlineStatus);
   window.removeEventListener("offline", updateOnlineStatus);
 });
 </script>
@@ -343,9 +284,7 @@ onUnmounted(() => {
   font-size: 1rem;
 }
 
-.user-details {
-  flex: 1;
-}
+.user-details { flex: 1; }
 
 .user-name {
   font-size: 0.8rem;
@@ -377,24 +316,12 @@ onUnmounted(() => {
   color: #ef4444;
 }
 
-.sidebar-nav::-webkit-scrollbar {
-  width: 4px;
-}
-
-.sidebar-nav::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-.sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-}
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 4px; }
 
 @media (max-width: 768px) {
-  .sidebar {
-    width: 70px;
-  }
+  .sidebar { width: 70px; }
 
   .sidebar-header h2,
   .role-badge,
@@ -405,27 +332,10 @@ onUnmounted(() => {
     display: none;
   }
 
-  .nav-item {
-    justify-content: center;
-    padding: 0.75rem;
-  }
-
-  .sidebar-header {
-    justify-content: center;
-    padding: 1rem;
-  }
-
-  .connection-status {
-    justify-content: center;
-  }
-
-  .user-info {
-    justify-content: center;
-    padding: 0.5rem;
-  }
-
-  .logout-btn {
-    justify-content: center;
-  }
+  .nav-item       { justify-content: center; padding: 0.75rem; }
+  .sidebar-header { justify-content: center; padding: 1rem; }
+  .connection-status { justify-content: center; }
+  .user-info      { justify-content: center; padding: 0.5rem; }
+  .logout-btn     { justify-content: center; }
 }
 </style>
