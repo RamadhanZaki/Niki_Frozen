@@ -109,8 +109,7 @@
           <h3>Performa Cabang Hari Ini</h3>
           <select v-model="selectedBranch" class="branch-filter">
             <option value="all">Semua Cabang</option>
-            <option value="1">Cabang Utama</option>
-            <option value="2">Cabang Kedua</option>
+            <option v-for="b in branches" :key="b.id" :value="b.id.toString()">{{ b.name }}</option>
           </select>
         </div>
         <div class="table-responsive">
@@ -179,9 +178,9 @@
               </div>
               <div
                 class="product-expiry"
-                :class="product.daysLeft <= 3 ? 'urgent' : 'warning'"
+                :class="product.days_left <= 3 ? 'urgent' : 'warning'"
               >
-                <span>{{ product.daysLeft }} hari lagi</span>
+                <span>{{ product.days_left }} hari lagi</span>
                 <small>Exp: {{ formatDate(product.expired_date) }}</small>
               </div>
             </div>
@@ -227,119 +226,67 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import SidebarOwner from "../../components/SidebarOwner.vue";
+import api from "../../services/axios.js";
 
 const router = useRouter();
 
-const isOnline = ref(navigator.onLine);
-const selectedBranch = ref("all");
-const userName = ref("Owner Nicky Frozen");
-const totalRevenue = ref(6790000);
-const totalTransactions = ref(240);
-const expiringProducts = ref(5);
-const totalDifference = ref(3000);
+const isOnline        = ref(navigator.onLine);
+const selectedBranch  = ref("all");
+const userName        = ref("Owner");
+const isLoading       = ref(false);
 
-const branches = ref([
-  {
-    id: 1,
-    name: "Cabang Utama",
-    revenue: 3850000,
-    transactions: 142,
-    average: 27113,
-    difference: -5000,
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Cabang Kedua",
-    revenue: 2940000,
-    transactions: 98,
-    average: 30000,
-    difference: 2000,
-    status: "active",
-  },
-]);
+const totalRevenue       = ref(0);
+const totalTransactions  = ref(0);
+const expiringProducts   = ref(0);
+const totalDifference    = ref(0);
 
-const expiredProductsList = ref([
-  {
-    id: 1,
-    name: "Nugget Ayam",
-    branch_name: "Cabang Utama",
-    expired_date: "2025-12-31",
-    daysLeft: 5,
-  },
-  {
-    id: 2,
-    name: "Sosis Solo",
-    branch_name: "Cabang Kedua",
-    expired_date: "2025-11-30",
-    daysLeft: 2,
-  },
-  {
-    id: 3,
-    name: "Roti Bakar",
-    branch_name: "Cabang Utama",
-    expired_date: "2025-10-15",
-    daysLeft: 1,
-  },
-]);
+const branches           = ref([]);
+const expiredProductsList= ref([]);
+const cashDifferencesList= ref([]);
 
-const cashDifferencesList = ref([
-  {
-    id: 1,
-    branch_name: "Cabang Utama",
-    shift_date: "25/05/2026",
-    cashier_name: "Siti",
-    difference: -5000,
-    time_ago: "2 jam lalu",
-  },
-  {
-    id: 2,
-    branch_name: "Cabang Kedua",
-    shift_date: "25/05/2026",
-    cashier_name: "Budi",
-    difference: 2000,
-    time_ago: "5 jam lalu",
-  },
-]);
-
-const userInitial = computed(() => {
-  return userName.value.charAt(0);
-});
+const userInitial = computed(() => userName.value.charAt(0));
 
 const filteredBranches = computed(() => {
   if (selectedBranch.value === "all") return branches.value;
   return branches.value.filter((b) => b.id.toString() === selectedBranch.value);
 });
 
-const formatNumber = (num) => {
-  return new Intl.NumberFormat("id-ID").format(num);
-};
+const formatNumber = (num) => new Intl.NumberFormat("id-ID").format(num);
+const formatDate   = (date) => new Date(date).toLocaleDateString("id-ID");
 
-const formatDate = (date) => {
-  return new Date(date).toLocaleDateString("id-ID");
-};
+const viewAllExpired     = () => router.push("/admin/products");
+const viewAllDifferences = () => router.push("/admin/shifts");
 
-const viewAllExpired = () => {
-  router.push("/admin/products");
-};
+const updateOnlineStatus = () => { isOnline.value = navigator.onLine; };
 
-const viewAllDifferences = () => {
-  router.push("/admin/shifts");
-};
-
-const updateOnlineStatus = () => {
-  isOnline.value = navigator.onLine;
+const fetchDashboard = async () => {
+  isLoading.value = true;
+  try {
+    const res = await api.get("/dashboard");
+    totalRevenue.value        = res.data.total_revenue;
+    totalTransactions.value   = res.data.total_transactions;
+    expiringProducts.value    = res.data.expiring_products;
+    totalDifference.value     = res.data.total_difference;
+    branches.value            = res.data.branches;
+    expiredProductsList.value = res.data.expired_products_list;
+    cashDifferencesList.value = res.data.cash_differences_list;
+  } catch (err) {
+    console.error("Gagal memuat dashboard:", err);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 onMounted(() => {
-  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("online",  updateOnlineStatus);
   window.addEventListener("offline", updateOnlineStatus);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   if (user.name) userName.value = user.name;
+  fetchDashboard();
 });
 
 onUnmounted(() => {
-  window.removeEventListener("online", updateOnlineStatus);
+  window.removeEventListener("online",  updateOnlineStatus);
   window.removeEventListener("offline", updateOnlineStatus);
 });
 </script>

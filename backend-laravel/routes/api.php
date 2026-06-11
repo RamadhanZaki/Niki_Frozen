@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/test', fn() => response()->json(['message' => 'Backend Laravel berjalan!']));
 
@@ -23,6 +24,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/users/{user}',                   [UserController::class, 'update']);
     Route::delete('/users/{user}',                [UserController::class, 'destroy']);
     Route::post('/users/{user}/reset-password',   [UserController::class, 'resetPassword']);
+
+    // Dashboard (owner only)
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // Products
     Route::get('/products',              [ProductController::class, 'index']);
