@@ -27,7 +27,7 @@ Dengan teknologi **Vue.js** di sisi frontend dan **Laravel** di sisi backend, se
 |---|---|---|---|
 | 1 | Fata Salma Putra Pureka | 23.11.5470 | — |
 | 2 | Sandi Setiawan | 23.11.5443 | — |
-| 3 | Ramadhan Zaki Attamimi | 23.11.5500 | [@RamadhanZaki](https://github.com/RamadhanZaki) |
+| 3 | Ramadhan Zaki Attamimi | 23.11.5500 | [RamadhanZaki](https://github.com/RamadhanZaki) |
 | 4 | Irvanza Darwandha Kusuma | 23.11.5784 | — |
 | 5 | Nathan Farros Kusuma Barracuda | 23.11.5780 | — |
 
@@ -148,7 +148,7 @@ php artisan serve
 Buka terminal **baru**, lalu masuk ke folder frontend:
 
 ```bash
-cd ../frontend-vue
+cd frontend-vue
 ```
 
 Install dependencies Node.js:
