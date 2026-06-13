@@ -1,17 +1,25 @@
-"# Root .gitignore untuk mono repository" 
-".env" 
-".env.*" 
-"!.env.example" 
-".vscode/" 
-".idea/" 
-"*.swp" 
-"*.swo" 
-"*~" 
-".DS_Store" 
-"Thumbs.db" 
-"*.log" 
-"*.tmp" 
-"*.cache" 
-"vendor/" 
-"node_modules/" 
-"*.local" 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE & editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+*.orig
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs & temporary files
+*.log
+*.tmp
+*.cache
+
+# Local configuration
+*.local
