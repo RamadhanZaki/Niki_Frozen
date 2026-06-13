@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Models\StockMutation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -45,7 +46,6 @@ class StockController extends Controller
 
         $products = $query->orderBy('name')->get()->map(fn($p) => $this->formatStock($p));
 
-        // Stats pakai DB langsung — hindari whereColumn di Eloquent
         $lowStock      = DB::table('stocks')->whereRaw('quantity <= min_stock')->where('quantity', '>', 0)->count();
         $criticalStock = DB::table('stocks')->where('quantity', 0)->count();
         $totalValue    = DB::table('stocks')
@@ -63,6 +63,41 @@ class StockController extends Controller
         ]);
     }
 
+    /** GET /api/stocks/{productId}/history */
+    public function history(Request $request, int $productId)
+    {
+        $deny = $this->checkOwner($request);
+        if ($deny) return $deny;
+
+        $product = Product::find($productId);
+        if (!$product) {
+            return response()->json(['message' => 'Produk tidak ditemukan.'], 404);
+        }
+
+        $mutations = StockMutation::with(['user'])
+            ->where('product_id', $productId)
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        $data = $mutations->through(function ($m) {
+            return [
+                'id'           => $m->id,
+                'date'         => $m->created_at->format('d/m/Y H:i'),
+                'type'         => $m->type,
+                'quantity'     => $m->quantity,
+                'before_stock' => $m->before_stock,
+                'after_stock'  => $m->after_stock,
+                'note'         => $m->note ?? '-',
+                'user'         => $m->user?->name ?? 'Sistem',
+            ];
+        });
+
+        return response()->json([
+            'product_name' => $product->name,
+            'mutations'    => $data,
+        ]);
+    }
+
     /** POST /api/stocks/adjust */
     public function adjust(Request $request)
     {
@@ -73,6 +108,7 @@ class StockController extends Controller
             'product_id' => 'required|exists:products,id',
             'type'       => 'required|in:add,reduce',
             'quantity'   => 'required|integer|min:1',
+            'note'       => 'nullable|string|max:255',
         ]);
 
         $stock = Stock::where('product_id', $request->product_id)->first();
@@ -80,6 +116,8 @@ class StockController extends Controller
         if (!$stock) {
             return response()->json(['message' => 'Data stok tidak ditemukan.'], 404);
         }
+
+        $beforeStock = $stock->quantity;
 
         if ($request->type === 'add') {
             $stock->quantity += $request->quantity;
@@ -90,9 +128,20 @@ class StockController extends Controller
             $stock->quantity -= $request->quantity;
         }
 
-        // Update manual karena $timestamps = false
         $stock->updated_at = now();
         $stock->save();
+
+        // Catat mutasi
+        StockMutation::create([
+            'product_id'   => $request->product_id,
+            'branch_id'    => $stock->branch_id,
+            'user_id'      => $request->user()?->id,
+            'type'         => $request->type === 'add' ? 'in' : 'out',
+            'quantity'     => $request->quantity,
+            'before_stock' => $beforeStock,
+            'after_stock'  => $stock->quantity,
+            'note'         => $request->note,
+        ]);
 
         $product = Product::with(['branch', 'stock'])->find($request->product_id);
 
@@ -112,9 +161,13 @@ class StockController extends Controller
             'product_id' => 'required|exists:products,id',
             'quantity'   => 'required|integer|min:0',
             'min_stock'  => 'nullable|integer|min:0',
+            'note'       => 'nullable|string|max:255',
         ]);
 
         $productModel = Product::findOrFail($request->product_id);
+
+        $existingStock = Stock::where('product_id', $request->product_id)->first();
+        $beforeStock   = $existingStock?->quantity ?? 0;
 
         $stock = Stock::updateOrCreate(
             ['product_id' => $request->product_id],
@@ -125,6 +178,21 @@ class StockController extends Controller
                 'updated_at' => now(),
             ]
         );
+
+        // Catat mutasi jika ada perubahan
+        if ($request->quantity != $beforeStock) {
+            $diff = $request->quantity - $beforeStock;
+            StockMutation::create([
+                'product_id'   => $request->product_id,
+                'branch_id'    => $productModel->branch_id,
+                'user_id'      => $request->user()?->id,
+                'type'         => $diff > 0 ? 'in' : 'out',
+                'quantity'     => abs($diff),
+                'before_stock' => $beforeStock,
+                'after_stock'  => $request->quantity,
+                'note'         => $request->note ?? 'Tambah stok manual',
+            ]);
+        }
 
         $product = Product::with(['branch', 'stock'])->find($request->product_id);
 

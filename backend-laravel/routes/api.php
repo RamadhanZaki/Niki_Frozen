@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\SettingController;
 
 Route::get('/test', fn() => response()->json(['message' => 'Backend Laravel berjalan!']));
 
@@ -43,6 +44,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Shifts (owner only - view)
     Route::get('/shifts', [ShiftController::class, 'index']);
 
+    // Settings (owner only)
+    Route::get('/settings',  [SettingController::class, 'index']);
+    Route::put('/settings',  [SettingController::class, 'update']);
+
     // Products
     Route::get('/products',              [ProductController::class, 'index']);
     Route::post('/products',             [ProductController::class, 'store']);
@@ -50,9 +55,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 
     // Stocks
-    Route::get('/stocks',         [StockController::class, 'index']);
-    Route::post('/stocks',        [StockController::class, 'store']);
-    Route::post('/stocks/adjust', [StockController::class, 'adjust']);
+    Route::get('/stocks',                    [StockController::class, 'index']);
+    Route::post('/stocks',                   [StockController::class, 'store']);
+    Route::post('/stocks/adjust',            [StockController::class, 'adjust']);
+    Route::get('/stocks/{productId}/history',[StockController::class, 'history']);
 
     // Temporary: fix produk yang tidak punya record stocks
     Route::get('/fix-stocks', function () {

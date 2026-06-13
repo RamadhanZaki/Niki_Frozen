@@ -512,8 +512,15 @@ const openAdjustModal = (product, type) => {
   adjustNote.value = "";
   showAdjustModal.value = true;
 };
-const viewHistory = (product) => {
+const viewHistory = async (product) => {
   selectedProduct.value = product;
+  stockHistory.value = [];
+  try {
+    const res = await api.get(`/stocks/${product.id}/history`);
+    stockHistory.value = res.data.mutations?.data ?? [];
+  } catch (err) {
+    showAlertMessage("Gagal memuat riwayat mutasi stok.", "error");
+  }
 };
 const closeModal = () => {
   showAddModal.value = false;

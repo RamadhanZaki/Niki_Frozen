@@ -30,7 +30,12 @@ class DashboardController extends Controller
         $soonDate  = \Carbon\Carbon::today()->addDays(7);
 
         // ── Stats ringkasan ──────────────────────────────────────
+        $yesterday         = \Carbon\Carbon::yesterday();
         $totalRevenue      = (float) Shift::whereDate('closed_at', $today)->sum('total_sales');
+        $yesterdayRevenue  = (float) Shift::whereDate('closed_at', $yesterday)->sum('total_sales');
+        $revenueChange     = $yesterdayRevenue > 0
+            ? round((($totalRevenue - $yesterdayRevenue) / $yesterdayRevenue) * 100, 1)
+            : ($totalRevenue > 0 ? 100 : 0);
         $totalTransactions = (int)   Shift::whereDate('closed_at', $today)->sum('total_transactions');
         $expiringProducts  = Product::whereBetween('expired_date', [$today, $soonDate])->count();
         $totalDifference   = (float) Shift::whereDate('closed_at', $today)
@@ -96,6 +101,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'total_revenue'        => $totalRevenue,
+            'revenue_change'       => $revenueChange,
             'total_transactions'   => $totalTransactions,
             'expiring_products'    => $expiringProducts,
             'total_difference'     => $totalDifference,
