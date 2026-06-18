@@ -56,6 +56,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/stocks',        [StockController::class, 'store']);
     Route::post('/stocks/adjust', [StockController::class, 'adjust']);
 
+    // Kasir — Produk (baca saja, untuk POS)
+    Route::get('/cashier/products', [ProductController::class, 'forCashier']);
+
     // Kasir — Shift
     Route::get('/cashier/shift/active',  [CashierShiftController::class, 'active']);
     Route::post('/cashier/shift/open',   [CashierShiftController::class, 'open']);

@@ -152,7 +152,38 @@ class ProductController extends Controller
         return response()->json(['message' => "{$name} berhasil dihapus."]);
     }
 
-    private function formatProduct(Product $p): array
+
+    /**
+     * GET /api/cashier/products
+     * Daftar produk + stok untuk kasir — hanya cabang kasir yang login
+     */
+    public function forCashier(Request $request)
+    {
+        $user = $request->user();
+
+        $query = Product::with('stock')
+            ->where('branch_id', $user->branch_id);
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $products = $query->orderBy('name')->get()->map(function ($p) {
+            return [
+                'id'           => $p->id,
+                'name'         => $p->name,
+                'category'     => $p->category,
+                'price'        => (float) $p->price,
+                'expired_date' => $p->expired_date?->format('Y-m-d'),
+                'stock'        => $p->stock?->quantity ?? 0,
+                'min_stock'    => $p->stock?->min_stock ?? 10,
+            ];
+        });
+
+        return response()->json(['products' => $products]);
+    }
+
+        private function formatProduct(Product $p): array
     {
         $today    = \Carbon\Carbon::today();
         $expired  = $p->expired_date ? \Carbon\Carbon::parse($p->expired_date) : null;
