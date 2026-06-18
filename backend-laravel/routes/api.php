@@ -9,6 +9,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\CashierShiftController;
+use App\Http\Controllers\TransactionController;
 
 Route::get('/test', fn() => response()->json(['message' => 'Backend Laravel berjalan!']));
 
@@ -53,6 +55,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/stocks',         [StockController::class, 'index']);
     Route::post('/stocks',        [StockController::class, 'store']);
     Route::post('/stocks/adjust', [StockController::class, 'adjust']);
+
+    // Kasir — Shift
+    Route::get('/cashier/shift/active',  [CashierShiftController::class, 'active']);
+    Route::post('/cashier/shift/open',   [CashierShiftController::class, 'open']);
+    Route::post('/cashier/shift/close',  [CashierShiftController::class, 'close']);
+    Route::get('/cashier/shift/history', [CashierShiftController::class, 'history']);
+
+    // Kasir — Transaksi
+    Route::get('/cashier/transactions',        [TransactionController::class, 'index']);
+    Route::post('/cashier/transactions',       [TransactionController::class, 'store']);
+    Route::post('/cashier/transactions/sync',  [TransactionController::class, 'sync']);
 
     // Temporary: fix produk yang tidak punya record stocks
     Route::get('/fix-stocks', function () {
