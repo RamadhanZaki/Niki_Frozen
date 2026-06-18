@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 12, 2026 at 06:00 PM
+-- Generation Time: Jun 18, 2026 at 06:56 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -41,8 +41,8 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `name`, `address`, `phone`, `created_at`, `updated_at`) VALUES
-(1, 'Cabang Utama', 'Jl. Utama No. 1, Yogyakarta', '081234567890', '2026-06-10 22:53:26', '2026-06-10 22:53:26'),
-(2, 'Cabang Kedua', 'Jl. Kedua No. 2, Yogyakarta', '081234567891', '2026-06-10 22:53:26', '2026-06-10 22:53:26');
+(1, 'Cabang Utama', 'Jl. Ring Road Utara, Ngringin, Condongcatur, Kec. Depok, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55281', '081234567890', '2026-06-10 22:53:26', '2026-06-12 21:38:00'),
+(2, 'Cabang Kedua', 'Jl. Wonosari KM 17, Patuk, Kec. Patuk, Kabupaten Gunungkidul, Daerah Istimewa Yogyakarta 55862', '081234567891', '2026-06-10 22:53:26', '2026-06-12 21:36:36');
 
 -- --------------------------------------------------------
 
@@ -165,7 +165,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (9, '2026_06_11_050156_create_transactions_table', 7),
 (10, '2026_06_11_050251_create_transaction_details_table', 8),
 (11, '2026_06_11_050339_create_financial_reports_table', 9),
-(12, '2026_06_11_060618_create_personal_access_tokens_table', 10);
+(12, '2026_06_11_060618_create_personal_access_tokens_table', 10),
+(13, '2026_06_13_051857_create_settings_table', 11),
+(14, '2026_06_13_051956_create_stock_mutations_table', 11);
 
 -- --------------------------------------------------------
 
@@ -205,8 +207,8 @@ CREATE TABLE `personal_access_tokens` (
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
 (4, 'App\\Models\\User', 3, 'auth_token', 'ecbd860d17538d75be3d14b96f33922ec324075b5bd31f826214175ecc8fb615', '[\"*\"]', NULL, NULL, '2026-06-11 00:11:38', '2026-06-11 00:11:38'),
 (11, 'App\\Models\\User', 5, 'auth_token', 'edfd9f3e56a7b635f4c659bbd2bbe07d3041e38e39f6e0eaa79d7bccac6d7fbd', '[\"*\"]', NULL, NULL, '2026-06-11 01:28:59', '2026-06-11 01:28:59'),
-(28, 'App\\Models\\User', 1, 'auth_token', '0e9ebfe4c5dcdeb0ab45f80c20ffa7e935b0616029f04511310e7ec06bcb3798', '[\"*\"]', '2026-06-12 08:29:47', NULL, '2026-06-12 08:27:43', '2026-06-12 08:29:47'),
-(29, 'App\\Models\\User', 2, 'auth_token', 'b6cefb43b4e4215674fbb83320f634f336495c3abfb45de55e1ebab0a373e7f7', '[\"*\"]', '2026-06-12 08:30:12', NULL, '2026-06-12 08:29:55', '2026-06-12 08:30:12');
+(29, 'App\\Models\\User', 2, 'auth_token', 'b6cefb43b4e4215674fbb83320f634f336495c3abfb45de55e1ebab0a373e7f7', '[\"*\"]', '2026-06-17 21:48:41', NULL, '2026-06-12 08:29:55', '2026-06-17 21:48:41'),
+(34, 'App\\Models\\User', 1, 'auth_token', '124a5352d250dc9ec3050057ba36f55a29aaa680085c9128957baffab12b6d59', '[\"*\"]', '2026-06-17 21:51:01', NULL, '2026-06-17 21:48:49', '2026-06-17 21:51:01');
 
 -- --------------------------------------------------------
 
@@ -262,7 +264,36 @@ CREATE TABLE `sessions` (
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
 ('hppZbs3y8lLepjZ6wQLZiUzpI9WKueIVt5FnA2li', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUG83UVVndGRDT2xZRGhnNmgzaExQeFJSV0cyVURqWFBKdXRZWExwdSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1781161700),
 ('hxAAZ3dFxLbT3nBWJc4WnuTjxb0ufmO4QgUkqKwg', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoibTR5cW1aZFRnYUkxeHc1aFdwTE12MVZnakh5TzByeHNCeG9yYnlFSiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1781152652),
+('JZrWwcajJOkP7WWyqigKWXWeZLVzcGUx7P0GuqWG', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRExPcjBHd3pSYm5MWGlBM1U2ODQxc0FFcThjVGU1Z1paNHBTajY4QiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1781328239),
 ('PKu5SyLKmgOWbm1Z8J46dCFmbWhytNNyWVxvmj41', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMGk1VDFFQTA1N3llMjdWZ3ozOXZXUDVKVkNkSERueDBISFNFcUJ3TyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1781165846);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `settings`
+--
+
+CREATE TABLE `settings` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `key` varchar(255) NOT NULL,
+  `value` text DEFAULT NULL,
+  `label` varchar(255) DEFAULT NULL,
+  `type` varchar(255) NOT NULL DEFAULT 'text',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `settings`
+--
+
+INSERT INTO `settings` (`id`, `key`, `value`, `label`, `type`, `created_at`, `updated_at`) VALUES
+(1, 'profit_margin', '25', 'Estimasi Margin Laba (%)', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50'),
+(2, 'store_name', 'Niki Frozen', 'Nama Toko', 'text', '2026-06-12 22:26:50', '2026-06-12 23:02:56'),
+(3, 'store_address', 'Jl. Ring Road Utara, Ngringin, Condongcatur, Kec. Depok, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55281', 'Alamat Toko', 'text', '2026-06-12 22:26:50', '2026-06-12 23:04:13'),
+(4, 'store_phone', '081234567890', 'No. Telepon Toko', 'text', '2026-06-12 22:26:50', '2026-06-12 23:03:52'),
+(5, 'low_stock_threshold', '10', 'Batas Stok Menipis', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50'),
+(6, 'expiry_warning_days', '7', 'Peringatan Expired (hari)', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50');
 
 -- --------------------------------------------------------
 
@@ -316,6 +347,26 @@ INSERT INTO `stocks` (`id`, `product_id`, `branch_id`, `quantity`, `min_stock`, 
 (9, 9, 1, 1000, 10, NULL),
 (10, 10, 1, 5, 10, NULL),
 (11, 11, 2, 2, 10, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `stock_mutations`
+--
+
+CREATE TABLE `stock_mutations` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `type` enum('in','out') NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `before_stock` int(11) NOT NULL,
+  `after_stock` int(11) NOT NULL,
+  `note` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -475,6 +526,13 @@ ALTER TABLE `sessions`
   ADD KEY `sessions_last_activity_index` (`last_activity`);
 
 --
+-- Indexes for table `settings`
+--
+ALTER TABLE `settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `settings_key_unique` (`key`);
+
+--
 -- Indexes for table `shifts`
 --
 ALTER TABLE `shifts`
@@ -489,6 +547,15 @@ ALTER TABLE `stocks`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `stocks_product_id_branch_id_unique` (`product_id`,`branch_id`),
   ADD KEY `stocks_branch_id_foreign` (`branch_id`);
+
+--
+-- Indexes for table `stock_mutations`
+--
+ALTER TABLE `stock_mutations`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `stock_mutations_product_id_foreign` (`product_id`),
+  ADD KEY `stock_mutations_branch_id_foreign` (`branch_id`),
+  ADD KEY `stock_mutations_user_id_foreign` (`user_id`);
 
 --
 -- Indexes for table `transactions`
@@ -548,19 +615,25 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `settings`
+--
+ALTER TABLE `settings`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `shifts`
@@ -573,6 +646,12 @@ ALTER TABLE `shifts`
 --
 ALTER TABLE `stocks`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `stock_mutations`
+--
+ALTER TABLE `stock_mutations`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `transactions`
@@ -621,6 +700,14 @@ ALTER TABLE `shifts`
 ALTER TABLE `stocks`
   ADD CONSTRAINT `stocks_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `stocks_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `stock_mutations`
+--
+ALTER TABLE `stock_mutations`
+  ADD CONSTRAINT `stock_mutations_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `stock_mutations_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `stock_mutations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `transactions`
