@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\FinancialReport;
+use App\Models\Setting;
 use App\Models\Shift;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -54,10 +55,14 @@ class ReportController extends Controller
             $grouped[$key]['transactions'] += (int)   $shift->total_transactions;
         }
 
+        // Ambil margin dari settings DB (default 25%)
+        $marginPercent = (float) Setting::get('profit_margin', 25);
+        $marginRate    = $marginPercent / 100;
+
         // Hitung average & profit
-        $reports = array_values(array_map(function ($r) {
+        $reports = array_values(array_map(function ($r) use ($marginRate) {
             $avg    = $r['transactions'] > 0 ? round($r['revenue'] / $r['transactions']) : 0;
-            $profit = round($r['revenue'] * 0.25); // estimasi margin 25%
+            $profit = round($r['revenue'] * $marginRate);
             return array_merge($r, [
                 'average' => $avg,
                 'profit'  => $profit,
@@ -85,6 +90,7 @@ class ReportController extends Controller
                 'total_transactions'  => $totalTransactions,
                 'net_profit'          => $netProfit,
                 'average_transaction' => $avgTransaction,
+                'margin_percent'      => $marginPercent,
             ],
             'branches' => $branches,
         ]);

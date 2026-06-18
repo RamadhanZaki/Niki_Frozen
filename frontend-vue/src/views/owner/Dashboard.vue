@@ -39,7 +39,9 @@
           <div class="stat-info">
             <p class="stat-label">Pendapatan Hari Ini</p>
             <p class="stat-value">Rp {{ formatNumber(totalRevenue) }}</p>
-            <p class="stat-change positive">↑ 12% dari kemarin</p>
+            <p class="stat-change" :class="revenueChange >= 0 ? 'positive' : 'negative'">
+              {{ revenueChange >= 0 ? '↑' : '↓' }} {{ Math.abs(revenueChange) }}% dari kemarin
+            </p>
           </div>
         </div>
 
@@ -239,6 +241,7 @@ const totalRevenue       = ref(0);
 const totalTransactions  = ref(0);
 const expiringProducts   = ref(0);
 const totalDifference    = ref(0);
+const revenueChange      = ref(0);
 
 const branches           = ref([]);
 const expiredProductsList= ref([]);
@@ -267,6 +270,7 @@ const fetchDashboard = async () => {
     totalTransactions.value   = res.data.total_transactions;
     expiringProducts.value    = res.data.expiring_products;
     totalDifference.value     = res.data.total_difference;
+    revenueChange.value       = res.data.revenue_change ?? 0;
     branches.value            = res.data.branches;
     expiredProductsList.value = res.data.expired_products_list;
     cashDifferencesList.value = res.data.cash_differences_list;

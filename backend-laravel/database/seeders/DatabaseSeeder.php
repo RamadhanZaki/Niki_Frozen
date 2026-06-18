@@ -46,5 +46,8 @@ class DatabaseSeeder extends Seeder
         foreach ($stocks as [$pid, $bid, $qty]) {
             DB::table('stocks')->insert(['product_id' => $pid, 'branch_id' => $bid, 'quantity' => $qty, 'min_stock' => 10, 'updated_at' => now()]);
         }
+
+        // Settings default
+        $this->call(SettingSeeder::class);
     }
 }

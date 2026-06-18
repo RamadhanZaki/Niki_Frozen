@@ -124,7 +124,7 @@
           <div class="summary-info">
             <p class="summary-label">Laba Bersih</p>
             <p class="summary-value">Rp {{ formatNumber(netProfit) }}</p>
-            <p class="summary-sub">Estimasi (25% margin)</p>
+            <p class="summary-sub">Estimasi ({{ marginPercent }}% margin)</p>
           </div>
         </div>
         <div class="summary-card">
@@ -297,6 +297,7 @@ const summaryData = ref({
   total_transactions: 0,
   net_profit: 0,
   average_transaction: 0,
+  margin_percent: 25,
 });
 
 // Computed dari summaryData (server sudah hitung)
@@ -304,6 +305,7 @@ const totalRevenue       = computed(() => summaryData.value.total_revenue);
 const totalTransactions  = computed(() => summaryData.value.total_transactions);
 const netProfit          = computed(() => summaryData.value.net_profit);
 const averageTransaction = computed(() => summaryData.value.average_transaction);
+const marginPercent      = computed(() => summaryData.value.margin_percent ?? 25);
 
 // Filter lokal hanya untuk pagination & chart (data sudah difilter server)
 const filteredReports = computed(() => allReports.value);
