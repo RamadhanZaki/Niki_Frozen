@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Stock;
+use App\Models\StockMutation;
 use App\Models\Shift;
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +26,7 @@ class OwnerWebController extends Controller
             'total_cabang'    => Branch::count(),
         ];
 
-        $transaksi_terbaru = Transaction::with(['kasir', 'branch'])
+        $transaksi_terbaru = Transaction::with(['user', 'branch'])
             ->whereDate('created_at', today())
             ->latest()->limit(10)->get();
 
@@ -127,23 +130,173 @@ class OwnerWebController extends Controller
     }
 
     // ─── Stocks ─────────────────────────────────────────────────────
-    public function stocks()
+    public function stocks(Request $request)
     {
-        $stocks = Stock::with(['product', 'branch'])->latest()->paginate(15);
-        return view('owner.stocks', compact('stocks'));
+        $query = Product::with(['branch', 'stock']);
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+        if ($request->filled('stock_filter')) {
+            $query->whereHas('stock', function ($q) use ($request) {
+                if ($request->stock_filter === 'critical') {
+                    $q->where('quantity', 0);
+                } elseif ($request->stock_filter === 'low') {
+                    $q->whereColumn('quantity', '<=', 'min_stock')->where('quantity', '>', 0);
+                } elseif ($request->stock_filter === 'normal') {
+                    $q->whereColumn('quantity', '>', 'min_stock');
+                }
+            });
+        }
+
+        $stocks   = $query->orderBy('name')->paginate(15)->withQueryString();
+        $branches = Branch::select('id', 'name')->get();
+
+        $total_products = Product::count();
+        $low_stock      = Stock::whereColumn('quantity', '<=', 'min_stock')->where('quantity', '>', 0)->count();
+        $critical_stock = Stock::where('quantity', 0)->count();
+        $total_value    = Product::join('stocks', 'stocks.product_id', '=', 'products.id')
+            ->selectRaw('SUM(products.price * stocks.quantity) as total')
+            ->value('total') ?? 0;
+
+        return view('owner.stocks', compact(
+            'stocks', 'branches', 'total_products', 'low_stock', 'critical_stock', 'total_value'
+        ));
+    }
+
+    public function adjustStock(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'type'       => 'required|in:add,reduce',
+            'quantity'   => 'required|integer|min:1',
+            'note'       => 'nullable|string|max:255',
+        ]);
+
+        $product = Product::findOrFail($request->product_id);
+        $stock   = $product->stock;
+
+        if (!$stock) {
+            $stock = Stock::create([
+                'product_id' => $product->id,
+                'branch_id'  => $product->branch_id,
+                'quantity'   => 0,
+                'min_stock'  => 10,
+            ]);
+        }
+
+        $before = $stock->quantity;
+
+        if ($request->type === 'add') {
+            $stock->quantity += $request->quantity;
+        } else {
+            if ($request->quantity > $stock->quantity) {
+                return back()->with('error', 'Jumlah pengurangan melebihi stok yang tersedia.');
+            }
+            $stock->quantity -= $request->quantity;
+        }
+
+        $stock->updated_at = now();
+        $stock->save();
+
+        StockMutation::create([
+            'product_id'   => $product->id,
+            'branch_id'    => $stock->branch_id,
+            'user_id'      => auth()->id(),
+            'type'         => $request->type === 'add' ? 'in' : 'out',
+            'quantity'     => $request->quantity,
+            'before_stock' => $before,
+            'after_stock'  => $stock->quantity,
+            'note'         => $request->note,
+        ]);
+
+        return redirect()->route('owner.stocks')->with('success', 'Stok berhasil disesuaikan.');
     }
 
     // ─── Reports ────────────────────────────────────────────────────
-    public function reports()
+    public function reports(Request $request)
     {
-        return view('owner.reports');
+        $start = $request->filled('start') ? $request->start : now()->startOfMonth()->toDateString();
+        $end   = $request->filled('end')   ? $request->end   : now()->toDateString();
+
+        $summary = [
+            'total_penjualan'   => Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])->sum('total'),
+            'total_transaksi'   => Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])->count(),
+            'rata_rata'         => Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])->avg('total') ?? 0,
+        ];
+
+        $penjualan_harian = Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
+            ->selectRaw('DATE(created_at) as tanggal, SUM(total) as total, COUNT(*) as jumlah')
+            ->groupBy('tanggal')
+            ->orderBy('tanggal')
+            ->get();
+
+        $produk_terlaris = TransactionDetail::with('product')
+            ->whereHas('transaction', function ($q) use ($start, $end) {
+                $q->whereBetween('created_at', [$start, $end . ' 23:59:59']);
+            })
+            ->selectRaw('product_id, SUM(qty) as total_qty, SUM(subtotal) as total_omzet')
+            ->groupBy('product_id')
+            ->orderByDesc('total_qty')
+            ->limit(5)
+            ->get();
+
+        $penjualan_per_cabang = Transaction::with('branch')
+            ->whereBetween('created_at', [$start, $end . ' 23:59:59'])
+            ->selectRaw('branch_id, SUM(total) as total, COUNT(*) as jumlah')
+            ->groupBy('branch_id')
+            ->get();
+
+        return view('owner.reports', compact(
+            'summary', 'penjualan_harian', 'produk_terlaris', 'penjualan_per_cabang', 'start', 'end'
+        ));
     }
 
     // ─── Branches ───────────────────────────────────────────────────
     public function branches()
     {
-        $branches = Branch::withCount('users')->latest()->get();
+        $branches = Branch::withCount(['users', 'products'])->latest()->get();
         return view('owner.branches', compact('branches'));
+    }
+
+    public function storeBranch(Request $request)
+    {
+        $request->validate([
+            'name'    => 'required|string|max:100',
+            'address' => 'nullable|string',
+            'phone'   => 'nullable|string|max:20',
+        ]);
+
+        Branch::create($request->only('name', 'address', 'phone'));
+
+        return redirect()->route('owner.branches')->with('success', 'Cabang berhasil ditambahkan.');
+    }
+
+    public function updateBranch(Request $request, Branch $branch)
+    {
+        $request->validate([
+            'name'    => 'required|string|max:100',
+            'address' => 'nullable|string',
+            'phone'   => 'nullable|string|max:20',
+        ]);
+
+        $branch->update($request->only('name', 'address', 'phone'));
+
+        return redirect()->route('owner.branches')->with('success', 'Cabang berhasil diperbarui.');
+    }
+
+    public function destroyBranch(Branch $branch)
+    {
+        if ($branch->users()->exists() || $branch->products()->exists()) {
+            return back()->with('error', 'Cabang tidak dapat dihapus karena masih memiliki data terkait.');
+        }
+
+        $branch->delete();
+
+        return redirect()->route('owner.branches')->with('success', 'Cabang berhasil dihapus.');
     }
 
     // ─── Shifts ─────────────────────────────────────────────────────
@@ -156,6 +309,31 @@ class OwnerWebController extends Controller
     // ─── Settings ───────────────────────────────────────────────────
     public function settings()
     {
-        return view('owner.settings');
+        $settings = [
+            'store_name'    => Setting::get('store_name', 'Niki Frozen'),
+            'store_address' => Setting::get('store_address', ''),
+            'store_phone'   => Setting::get('store_phone', ''),
+            'tax_percent'   => Setting::get('tax_percent', 0),
+            'receipt_note'  => Setting::get('receipt_note', 'Terima kasih telah berbelanja!'),
+        ];
+
+        return view('owner.settings', compact('settings'));
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $request->validate([
+            'store_name'    => 'required|string|max:150',
+            'store_address' => 'nullable|string',
+            'store_phone'   => 'nullable|string|max:20',
+            'tax_percent'   => 'nullable|numeric|min:0|max:100',
+            'receipt_note'  => 'nullable|string|max:255',
+        ]);
+
+        foreach (['store_name', 'store_address', 'store_phone', 'tax_percent', 'receipt_note'] as $key) {
+            Setting::set($key, $request->input($key));
+        }
+
+        return redirect()->route('owner.settings')->with('success', 'Pengaturan berhasil disimpan.');
     }
 }
