@@ -315,6 +315,10 @@
                class="nav-link {{ request()->routeIs('owner.branches') ? 'active' : '' }}">
                 <i class="bi bi-building"></i> Cabang
             </a>
+            <a href="{{ route('owner.users') }}"
+               class="nav-link {{ request()->routeIs('owner.users') ? 'active' : '' }}">
+                <i class="bi bi-people"></i> Pengguna
+            </a>
             <a href="{{ route('owner.shifts') }}"
                class="nav-link {{ request()->routeIs('owner.shifts') ? 'active' : '' }}">
                 <i class="bi bi-clock-history"></i> Shift

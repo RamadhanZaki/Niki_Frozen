@@ -33,6 +33,12 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
 
     Route::get('/settings',            [OwnerWebController::class, 'settings'])->name('settings');
     Route::post('/settings',           [OwnerWebController::class, 'updateSettings'])->name('settings.update');
+
+    Route::get('/users',                        [OwnerWebController::class, 'users'])->name('users');
+    Route::post('/users',                       [OwnerWebController::class, 'storeUser'])->name('users.store');
+    Route::put('/users/{user}',                 [OwnerWebController::class, 'updateUser'])->name('users.update');
+    Route::post('/users/{user}/reset-password', [OwnerWebController::class, 'resetPasswordUser'])->name('users.resetPassword');
+    Route::delete('/users/{user}',              [OwnerWebController::class, 'destroyUser'])->name('users.destroy');
 });
 
 // ─── Kasir ──────────────────────────────────────────

@@ -11,7 +11,9 @@ use App\Models\StockMutation;
 use App\Models\Shift;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class OwnerWebController extends Controller
@@ -335,5 +337,104 @@ class OwnerWebController extends Controller
         }
 
         return redirect()->route('owner.settings')->with('success', 'Pengaturan berhasil disimpan.');
+    }
+
+    // ─── Users (Kasir) ────────────────────────────────────────────────
+    public function users(Request $request)
+    {
+        $query = User::with('branch')->where('role', 'kasir');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        $users    = $query->orderBy('name')->paginate(15)->withQueryString();
+        $branches = Branch::select('id', 'name')->get();
+
+        $total_users     = User::where('role', 'kasir')->count();
+        $active_cashiers = User::where('role', 'kasir')->where('status', 'aktif')->count();
+
+        return view('owner.users', compact('users', 'branches', 'total_users', 'active_cashiers'));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $request->validate([
+            'name'      => 'required|string|max:100',
+            'email'     => 'required|email|unique:users,email',
+            'password'  => 'required|string|min:6',
+            'branch_id' => 'nullable|exists:branches,id',
+            'status'    => 'in:aktif,nonaktif',
+        ]);
+
+        User::create([
+            'name'      => $request->name,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'role'      => 'kasir',
+            'branch_id' => $request->branch_id ?: null,
+            'status'    => $request->status ?? 'aktif',
+        ]);
+
+        return redirect()->route('owner.users')->with('success', 'Kasir berhasil ditambahkan.');
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        if ($user->role !== 'kasir') {
+            return back()->with('error', 'Hanya akun kasir yang dapat diubah dari halaman ini.');
+        }
+
+        $request->validate([
+            'name'      => 'required|string|max:100',
+            'email'     => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'branch_id' => 'nullable|exists:branches,id',
+            'status'    => 'in:aktif,nonaktif',
+        ]);
+
+        $user->update([
+            'name'      => $request->name,
+            'email'     => $request->email,
+            'branch_id' => $request->branch_id ?: null,
+            'status'    => $request->status ?? $user->status,
+        ]);
+
+        return redirect()->route('owner.users')->with('success', 'Data kasir berhasil diperbarui.');
+    }
+
+    public function resetPasswordUser(Request $request, User $user)
+    {
+        if ($user->role !== 'kasir') {
+            return back()->with('error', 'Hanya akun kasir yang dapat direset dari halaman ini.');
+        }
+
+        $request->validate([
+            'password'              => 'required|string|min:6',
+            'password_confirmation' => 'required|same:password',
+        ]);
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return redirect()->route('owner.users')->with('success', "Password untuk {$user->name} berhasil direset.");
+    }
+
+    public function destroyUser(User $user)
+    {
+        if ($user->role !== 'kasir') {
+            return back()->with('error', 'Hanya akun kasir yang dapat dihapus dari halaman ini.');
+        }
+
+        $name = $user->name;
+        $user->tokens()->delete();
+        $user->delete();
+
+        return redirect()->route('owner.users')->with('success', "{$name} berhasil dihapus.");
     }
 }
