@@ -22,11 +22,19 @@ class OwnerWebController extends Controller
     // ─── Dashboard ──────────────────────────────────────────────────
     public function dashboard()
     {
+        $today    = now()->toDateString();
+        $soonDate = now()->addDays(7)->toDateString();
+
         $stats = [
-            'total_penjualan' => Transaction::whereDate('created_at', today())->sum('total'),
-            'total_transaksi' => Transaction::whereDate('created_at', today())->count(),
-            'total_produk'    => Product::count(),
-            'total_cabang'    => Branch::count(),
+            'total_penjualan'    => Transaction::whereDate('created_at', today())->sum('total'),
+            'total_transaksi'    => Transaction::whereDate('created_at', today())->count(),
+            'total_produk'       => Product::count(),
+            'total_cabang'       => Branch::count(),
+            'produk_kadaluarsa'  => Product::whereBetween('expired_date', [$today, $soonDate])->count(),
+            'stok_menipis'       => Stock::whereColumn('quantity', '<=', 'min_stock')->count(),
+            'total_stok'         => Stock::sum('quantity'),
+            'transfer_stok'      => StockMutation::count(),
+            'transfer_hari_ini'  => StockMutation::whereDate('created_at', today())->count(),
         ];
 
         $transaksi_terbaru = Transaction::with(['user', 'branch'])
@@ -36,7 +44,39 @@ class OwnerWebController extends Controller
         $stok_menipis = Stock::with('product')
             ->whereColumn('quantity', '<=', 'min_stock')->get();
 
-        return view('owner.dashboard', compact('stats', 'transaksi_terbaru', 'stok_menipis'));
+        // ── Revenue 90 hari terakhir untuk grafik ──
+        $start90 = now()->subDays(89)->startOfDay();
+        $rows = Transaction::where('created_at', '>=', $start90)
+            ->selectRaw('DATE(created_at) as tanggal, SUM(total) as total')
+            ->groupBy('tanggal')
+            ->pluck('total', 'tanggal');
+
+        $revenue_labels = [];
+        $revenue_data   = [];
+        for ($d = $start90->copy(); $d <= now(); $d->addDay()) {
+            $key = $d->toDateString();
+            $revenue_labels[] = $d->format('d M');
+            $revenue_data[]   = (float) ($rows[$key] ?? 0);
+        }
+        $total_revenue_90 = array_sum($revenue_data);
+
+        // ── Distribusi kategori produk untuk donut chart ──
+        $kategori_raw = Product::selectRaw('category, COUNT(*) as jumlah')
+            ->groupBy('category')->pluck('jumlah', 'category');
+        $total_kategori = $kategori_raw->sum();
+        $kategori_produk = $kategori_raw->map(function ($jumlah, $kategori) use ($total_kategori) {
+            return [
+                'label'  => $kategori,
+                'jumlah' => $jumlah,
+                'persen' => $total_kategori > 0 ? round($jumlah / $total_kategori * 100) : 0,
+            ];
+        })->values();
+
+        return view('owner.dashboard', compact(
+            'stats', 'transaksi_terbaru', 'stok_menipis',
+            'revenue_labels', 'revenue_data', 'total_revenue_90',
+            'kategori_produk'
+        ));
     }
 
     // ─── Products ───────────────────────────────────────────────────
@@ -63,14 +103,22 @@ class OwnerWebController extends Controller
         $expired_count = Product::where('expired_date', '<', $today)->count();
         $low_stock     = Stock::whereColumn('quantity', '<=', 'min_stock')->count();
 
-        return view('owner.products', compact('products', 'branches', 'expiring_soon', 'expired_count', 'low_stock'));
+        // Gabungan kategori default + kategori unik yang sudah pernah diinput manual
+        $categories = collect(['Frozen', 'Snack', 'Dessert', 'Minuman', 'Lainnya'])
+            ->merge(Product::select('category')->distinct()->pluck('category'))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        return view('owner.products', compact('products', 'branches', 'expiring_soon', 'expired_count', 'low_stock', 'categories'));
     }
 
     public function storeProduct(Request $request)
     {
         $request->validate([
             'name'         => 'required|string|max:150',
-            'category'     => ['required', Rule::in(['Frozen', 'Snack', 'Dessert', 'Minuman', 'Lainnya'])],
+            'category'     => 'required|string|max:50',
             'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'price'        => 'required|numeric|min:0',
             'expired_date' => 'required|date',
@@ -80,6 +128,7 @@ class OwnerWebController extends Controller
         ]);
 
         $data = $request->only('name', 'category', 'price', 'expired_date', 'branch_id');
+        $data['category'] = trim($data['category']);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
@@ -101,7 +150,7 @@ class OwnerWebController extends Controller
     {
         $request->validate([
             'name'         => 'required|string|max:150',
-            'category'     => ['required', Rule::in(['Frozen', 'Snack', 'Dessert', 'Minuman', 'Lainnya'])],
+            'category'     => 'required|string|max:50',
             'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'price'        => 'required|numeric|min:0',
             'expired_date' => 'required|date',
@@ -111,6 +160,7 @@ class OwnerWebController extends Controller
         ]);
 
         $data = $request->only('name', 'category', 'price', 'expired_date', 'branch_id');
+        $data['category'] = trim($data['category']);
 
         if ($request->hasFile('image')) {
             // Hapus gambar lama kalau ada, lalu simpan yang baru

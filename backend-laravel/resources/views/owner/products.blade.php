@@ -69,7 +69,7 @@
             <div class="col-sm-3">
                 <select name="category" class="form-select form-select-sm">
                     <option value="">Semua Kategori</option>
-                    @foreach(['Frozen', 'Snack', 'Dessert', 'Minuman', 'Lainnya'] as $cat)
+                    @foreach($categories as $cat)
                         <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                     @endforeach
                 </select>
@@ -189,11 +189,15 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold">Kategori <span class="text-danger">*</span></label>
-                            <select name="category" id="f_category" class="form-select" required>
-                                @foreach(['Frozen', 'Snack', 'Dessert', 'Minuman', 'Lainnya'] as $cat)
+                            <select id="f_category" class="form-select" required>
+                                @foreach($categories as $cat)
                                     <option value="{{ $cat }}">{{ $cat }}</option>
                                 @endforeach
+                                <option value="__custom__">+ Kategori Baru...</option>
                             </select>
+                            <input type="text" name="category" id="f_category_custom"
+                                   class="form-control mt-2 d-none" placeholder="Ketik nama kategori baru"
+                                   maxlength="50">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Harga <span class="text-danger">*</span></label>
@@ -239,6 +243,35 @@
 @push('scripts')
 <script>
 const productModal = new bootstrap.Modal(document.getElementById('productModal'));
+const catSelect = document.getElementById('f_category');
+const catCustom = document.getElementById('f_category_custom');
+
+// Saat dropdown kategori berubah: tampilkan input manual jika "+ Kategori Baru..." dipilih
+function syncCategoryField() {
+    if (catSelect.value === '__custom__') {
+        catCustom.classList.remove('d-none');
+        catCustom.value = '';
+        catCustom.focus();
+    } else {
+        catCustom.classList.add('d-none');
+        catCustom.value = catSelect.value;
+    }
+}
+catSelect.addEventListener('change', syncCategoryField);
+
+// Set kategori (dipakai saat tambah baru atau edit produk lama)
+function setCategoryValue(category) {
+    const optionExists = Array.from(catSelect.options).some(opt => opt.value === category);
+    if (optionExists) {
+        catSelect.value = category;
+        catCustom.classList.add('d-none');
+        catCustom.value = category;
+    } else {
+        catSelect.value = '__custom__';
+        catCustom.classList.remove('d-none');
+        catCustom.value = category;
+    }
+}
 
 function openProductModal(data = null) {
     const form = document.getElementById('productForm');
@@ -253,7 +286,7 @@ function openProductModal(data = null) {
         methodField.innerHTML = '<input type="hidden" name="_method" value="PUT">';
 
         document.getElementById('f_name').value = data.name;
-        document.getElementById('f_category').value = data.category;
+        setCategoryValue(data.category);
         document.getElementById('f_price').value = data.price;
         document.getElementById('f_expired_date').value = data.expired_date.substring(0, 10);
         document.getElementById('f_branch_id').value = data.branch_id;
@@ -265,6 +298,7 @@ function openProductModal(data = null) {
         form.action = '{{ route("owner.products.store") }}';
         methodField.innerHTML = '';
         form.reset();
+        setCategoryValue(catSelect.options[0]?.value ?? '');
         preview.src = '{{ asset("images/no-product.svg") }}';
     }
 
