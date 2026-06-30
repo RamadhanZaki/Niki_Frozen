@@ -94,6 +94,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th></th>
                         <th>#</th>
                         <th>Nama Produk</th>
                         <th>Kategori</th>
@@ -112,6 +113,10 @@
                         $isSoon = !$isExpired && $expDate->diffInDays(now()) <= 7;
                     @endphp
                     <tr>
+                        <td>
+                            <img src="{{ $p->image_url }}" alt="{{ $p->name }}"
+                                 class="rounded-2" style="width:40px;height:40px;object-fit:cover;">
+                        </td>
                         <td class="text-muted small">{{ $products->firstItem() + $i }}</td>
                         <td class="fw-semibold">{{ $p->name }}</td>
                         <td><span class="badge bg-secondary">{{ $p->category }}</span></td>
@@ -134,6 +139,7 @@
                                     "branch_id" => $p->branch_id,
                                     "stock" => $p->stock?->quantity ?? 0,
                                     "min_stock" => $p->stock?->min_stock ?? 10,
+                                    "image_url" => $p->image_url,
                                 ]) }})'>
                                 <i class="bi bi-pencil"></i>
                             </button>
@@ -147,7 +153,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="8" class="text-center text-muted py-4">Tidak ada produk</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada produk</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -166,10 +172,16 @@
                 <h5 class="modal-title" id="productModalTitle">Tambah Produk</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="productForm" method="POST" action="{{ route('owner.products.store') }}">
+            <form id="productForm" method="POST" action="{{ route('owner.products.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div id="methodField"></div>
                 <div class="modal-body">
+                    <div class="mb-3 text-center">
+                        <img id="f_preview" src="{{ asset('images/no-product.svg') }}" alt="Preview"
+                             class="rounded-2 mb-2" style="width:90px;height:90px;object-fit:cover;border:1px solid #dee2e6;">
+                        <input type="file" name="image" id="f_image" class="form-control form-control-sm" accept="image/png,image/jpeg,image/webp">
+                        <div class="form-text">Opsional. Format JPG/PNG/WEBP, maks 2MB.</div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Nama Produk <span class="text-danger">*</span></label>
                         <input type="text" name="name" id="f_name" class="form-control" required>
@@ -232,11 +244,13 @@ function openProductModal(data = null) {
     const form = document.getElementById('productForm');
     const methodField = document.getElementById('methodField');
     const title = document.getElementById('productModalTitle');
+    const preview = document.getElementById('f_preview');
 
     if (data) {
         title.textContent = 'Edit Produk';
         form.action = `{{ url('owner/products') }}/${data.id}`;
-        methodField.innerHTML = '@method('PUT')';
+        // Form file upload tidak bisa kirim method PUT asli, jadi pakai method spoofing
+        methodField.innerHTML = '<input type="hidden" name="_method" value="PUT">';
 
         document.getElementById('f_name').value = data.name;
         document.getElementById('f_category').value = data.category;
@@ -245,14 +259,28 @@ function openProductModal(data = null) {
         document.getElementById('f_branch_id').value = data.branch_id;
         document.getElementById('f_stock').value = data.stock;
         document.getElementById('f_min_stock').value = data.min_stock;
+        preview.src = data.image_url;
     } else {
         title.textContent = 'Tambah Produk';
         form.action = '{{ route("owner.products.store") }}';
         methodField.innerHTML = '';
         form.reset();
+        preview.src = '{{ asset("images/no-product.svg") }}';
     }
 
+    document.getElementById('f_image').value = '';
     productModal.show();
 }
+
+// Preview gambar saat user pilih file baru
+document.getElementById('f_image').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        document.getElementById('f_preview').src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+});
 </script>
 @endpush

@@ -14,6 +14,7 @@ use App\Models\TransactionDetail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class OwnerWebController extends Controller
@@ -70,6 +71,7 @@ class OwnerWebController extends Controller
         $request->validate([
             'name'         => 'required|string|max:150',
             'category'     => ['required', Rule::in(['Frozen', 'Snack', 'Dessert', 'Minuman', 'Lainnya'])],
+            'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'price'        => 'required|numeric|min:0',
             'expired_date' => 'required|date',
             'branch_id'    => 'required|exists:branches,id',
@@ -77,7 +79,13 @@ class OwnerWebController extends Controller
             'min_stock'    => 'nullable|integer|min:0',
         ]);
 
-        $product = Product::create($request->only('name', 'category', 'price', 'expired_date', 'branch_id'));
+        $data = $request->only('name', 'category', 'price', 'expired_date', 'branch_id');
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product = Product::create($data);
 
         Stock::create([
             'product_id' => $product->id,
@@ -94,6 +102,7 @@ class OwnerWebController extends Controller
         $request->validate([
             'name'         => 'required|string|max:150',
             'category'     => ['required', Rule::in(['Frozen', 'Snack', 'Dessert', 'Minuman', 'Lainnya'])],
+            'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'price'        => 'required|numeric|min:0',
             'expired_date' => 'required|date',
             'branch_id'    => 'required|exists:branches,id',
@@ -101,7 +110,17 @@ class OwnerWebController extends Controller
             'min_stock'    => 'nullable|integer|min:0',
         ]);
 
-        $product->update($request->only('name', 'category', 'price', 'expired_date', 'branch_id'));
+        $data = $request->only('name', 'category', 'price', 'expired_date', 'branch_id');
+
+        if ($request->hasFile('image')) {
+            // Hapus gambar lama kalau ada, lalu simpan yang baru
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product->update($data);
 
         $stock = $product->stock;
         if ($stock) {
@@ -125,6 +144,11 @@ class OwnerWebController extends Controller
     public function destroyProduct(Product $product)
     {
         $name = $product->name;
+
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
+
         $product->stock()->delete();
         $product->delete();
 

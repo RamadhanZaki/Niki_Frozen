@@ -19,10 +19,9 @@
             <div class="col-6 col-md-4 product-item" data-name="{{ strtolower($p->name) }}">
                 <div class="card border-0 shadow-sm h-100 {{ $qty <= 0 ? 'opacity-50' : '' }}">
                     <div class="card-body text-center p-3">
-                        <div class="rounded-3 mx-auto mb-2 d-flex align-items-center justify-content-center"
-                             style="width:48px;height:48px;background:#e0f7fc;">
-                            <i class="bi bi-box-seam fs-5 text-primary"></i>
-                        </div>
+                        <img src="{{ $p->image_url }}" alt="{{ $p->name }}"
+                             class="rounded-3 mx-auto mb-2 d-block"
+                             style="width:64px;height:64px;object-fit:cover;">
                         <div class="fw-semibold small mb-1">{{ $p->name }}</div>
                         <div class="text-muted" style="font-size:.7rem;">{{ $p->category }}</div>
                         <div class="fw-bold text-primary mb-2">Rp {{ number_format($p->price, 0, ',', '.') }}</div>
