@@ -59,19 +59,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/stocks',                   [StockController::class, 'store']);
     Route::post('/stocks/adjust',            [StockController::class, 'adjust']);
     Route::get('/stocks/{productId}/history',[StockController::class, 'history']);
-
-    // Temporary: fix produk yang tidak punya record stocks
-    Route::get('/fix-stocks', function () {
-        $products = \App\Models\Product::whereDoesntHave('stock')->get();
-        foreach ($products as $p) {
-            \App\Models\Stock::create([
-                'product_id' => $p->id,
-                'branch_id'  => $p->branch_id,
-                'quantity'   => 0,
-                'min_stock'  => 10,
-                'updated_at' => now(),
-            ]);
-        }
-        return response()->json(['fixed' => $products->count() . ' produk diperbaiki']);
-    });
 });

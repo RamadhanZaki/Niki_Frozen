@@ -79,16 +79,7 @@ git clone https://github.com/RamadhanZaki/Niki_Frozen.git .
 
 ### 3. Setup Database
 
-1. Buka browser, akses **phpMyAdmin**: [http://localhost/phpmyadmin](http://localhost/phpmyadmin)
-2. Klik **New** → buat database baru bernama `niki_frozen`
-3. Pilih database `niki_frozen` → klik tab **Import**
-4. Klik **Choose File** → pilih file dari `database/niki_frozen.sql`
-5. Klik **Go** / **Import**
-
-> 💡 Atau import via terminal:
-> ```bash
-> mysql -u root -p niki_frozen < database/niki_frozen.sql
-> ```
+Buat database kosong dulu lewat **phpMyAdmin**: [http://localhost/phpmyadmin](http://localhost/phpmyadmin) → klik **New** → beri nama `niki_frozen` → **Create**. (Jangan import apa pun dulu — tabel akan dibuat otomatis di langkah berikutnya.)
 
 ---
 
@@ -131,6 +122,18 @@ DB_PASSWORD=
 
 > ⚠️ Untuk XAMPP, `DB_USERNAME` default adalah `root` dan `DB_PASSWORD` dikosongkan.
 
+Jalankan migration + seeder (ini **cara resmi & satu-satunya cara** membuat tabel — jangan digabung dengan import SQL manual, lihat catatan di bawah):
+
+```bash
+php artisan migrate --seed
+```
+
+> 📌 **Kenapa pakai migration, bukan import `database/niki_frozen.sql`?**
+> File `.sql` di folder `database/` cuma disimpan sebagai **snapshot/backup**, bukan cara install. Kalau kamu import SQL itu **lalu** menjalankan `php artisan migrate`, akan muncul error `Table 'xxx' already exists` — karena Laravel tidak tahu tabelnya sudah ada dari hasil import, dan mencoba membuatnya lagi.
+> Jadi pilih salah satu saja:
+> - **Disarankan:** `php artisan migrate --seed` (selalu sinkron dengan kode terbaru)
+> - **Alternatif:** import `database/niki_frozen.sql` via phpMyAdmin — tapi kalau nanti ada migration baru dari repo, jalankan `php artisan migrate` seperti biasa (jangan drop & import ulang SQL-nya), supaya tidak tabrakan dengan tabel yang sudah ada.
+
 Install dependencies Node.js untuk build asset frontend (CSS/JS Blade via Vite):
 
 ```bash
@@ -147,6 +150,14 @@ php artisan serve
 ```
 
 ✅ Aplikasi (backend + tampilan Blade) berjalan di: `http://127.0.0.1:8000`
+
+> 🔑 **Akun default dari seeder** (untuk login pertama kali):
+> | Role | Email | Password |
+> |---|---|---|
+> | Owner | owner@nicksfrozen.com | password123 |
+> | Kasir | siti@nicksfrozen.com | password123 |
+>
+> Segera ganti password ini kalau aplikasi sudah dipakai di luar development.
 
 ---
 
