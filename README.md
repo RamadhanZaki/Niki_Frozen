@@ -3,9 +3,9 @@
 > **Sistem POS & Monitoring Keuangan Multi-Cabang**
 > Tim NICE GANK | AMIKOM 2025/2026
 
-Sistem POS & Monitoring Keuangan Niki Frozen dirancang menggunakan arsitektur **Client-Server berbasis web**. Arsitektur ini dipilih karena sistem harus dapat diakses dari beberapa cabang secara bersamaan melalui browser tanpa perlu instalasi perangkat lunak khusus di tiap perangkat kasir.
+Sistem POS & Monitoring Keuangan Niki Frozen dirancang menggunakan arsitektur **web monolith berbasis Laravel**. Arsitektur ini dipilih karena sistem harus dapat diakses dari beberapa cabang secara bersamaan melalui browser tanpa perlu instalasi perangkat lunak khusus di tiap perangkat kasir.
 
-Dengan teknologi **Vue.js** di sisi frontend dan **Laravel** di sisi backend, setiap transaksi penjualan, laporan keuangan, dan data stok produk frozen food dapat dipantau secara *real-time* dari seluruh cabang dalam satu dashboard terpadu — kapan saja dan di mana saja.
+Dengan **Laravel Blade** sebagai server-rendered frontend dan **Laravel** sebagai backend dalam satu aplikasi yang sama, setiap transaksi penjualan, laporan keuangan, dan data stok produk frozen food dapat dipantau secara *real-time* dari seluruh cabang dalam satu dashboard terpadu — kapan saja dan di mana saja.
 
 ---
 
@@ -13,11 +13,11 @@ Dengan teknologi **Vue.js** di sisi frontend dan **Laravel** di sisi backend, se
 
 | Layer | Teknologi |
 |---|---|
-| Frontend | Vue.js 3 |
+| Frontend | Laravel Blade |
 | Backend | Laravel (PHP) |
 | Database | MySQL / MariaDB |
 | Local Server | XAMPP |
-| API | RESTful API |
+| Auth | Laravel Session-based Auth |
 
 ---
 
@@ -37,8 +37,7 @@ Dengan teknologi **Vue.js** di sisi frontend dan **Laravel** di sisi backend, se
 
 ```
 Niki_Frozen/
-├── backend-laravel/     # Laravel REST API
-├── frontend-vue/        # Vue.js 3 App
+├── backend-laravel/     # Laravel App (Backend + Blade Frontend)
 ├── database/            # File SQL database
 └── README.md
 ```
@@ -51,12 +50,12 @@ Pastikan tools berikut sudah terinstal sebelum memulai:
 
 - [XAMPP](https://www.apachefriends.org/) (PHP >= 8.1 + MySQL)
 - [Composer](https://getcomposer.org/)
-- [Node.js](https://nodejs.org/) >= 18.x & npm
+- [Node.js](https://nodejs.org/) >= 18.x & npm (untuk build asset Vite bawaan Laravel — CSS/JS)
 - [Git](https://git-scm.com/)
 
 ---
 
-## 📘 Panduan Instalasi — XAMPP & Setup Project Laravel + Vue
+## 📘 Panduan Instalasi — XAMPP & Setup Project Laravel
 
 ### 1. Persiapan XAMPP
 
@@ -133,49 +132,22 @@ DB_PASSWORD=
 
 > ⚠️ Untuk XAMPP, `DB_USERNAME` default adalah `root` dan `DB_PASSWORD` dikosongkan.
 
-Jalankan backend server:
+Install dependencies Node.js untuk build asset frontend (CSS/JS Blade via Vite):
+
+```bash
+npm install
+npm run build
+```
+
+> 💡 Untuk mode development dengan hot-reload, jalankan `npm run dev` di terminal terpisah.
+
+Jalankan server Laravel:
 
 ```bash
 php artisan serve
 ```
 
-✅ Backend berjalan di: `http://127.0.0.1:8000`
-
----
-
-### 5. Setup Frontend (Vue.js)
-
-Buka terminal **baru**, lalu masuk ke folder frontend:
-
-```bash
-cd frontend-vue
-```
-
-Install dependencies Node.js:
-
-```bash
-npm install
-```
-
-Salin file konfigurasi environment:
-
-```bash
-cp .env.example .env
-```
-
-Sesuaikan URL API pada `.env` frontend:
-
-```env
-VITE_API_URL=http://127.0.0.1:8000/api
-```
-
-Jalankan frontend dev server:
-
-```bash
-npm run dev
-```
-
-✅ Frontend berjalan di: `http://localhost:5173`
+✅ Aplikasi (backend + tampilan Blade) berjalan di: `http://127.0.0.1:8000`
 
 ---
 
@@ -183,8 +155,7 @@ npm run dev
 
 | Service | URL |
 |---|---|
-| Frontend (Vue.js) | http://localhost:5173 |
-| Backend (Laravel) | http://127.0.0.1:8000 |
+| Aplikasi (Login, Owner, Kasir) | http://127.0.0.1:8000 |
 | phpMyAdmin | http://localhost/phpmyadmin |
 
 ---
