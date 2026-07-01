@@ -46,7 +46,7 @@
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form action="{{ route('owner.branches.destroy', $b->id) }}" method="POST" class="d-inline"
-                                  onsubmit="return confirm('Hapus cabang {{ $b->name }}? Cabang dengan data terkait tidak dapat dihapus.')">
+                                  onsubmit="return confirmDelete(this, 'Cabang {{ $b->name }} akan dihapus. Cabang dengan data terkait tidak dapat dihapus.')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
