@@ -4,6 +4,15 @@
 
 @section('content')
 
+<div class="d-flex justify-content-end mb-2">
+    <span id="connStatus" class="badge rounded-pill text-bg-success">
+        <i class="bi bi-wifi"></i> Online
+    </span>
+    <span id="pendingStatus" class="badge rounded-pill text-bg-warning ms-2" style="display:none;">
+        <i class="bi bi-cloud-arrow-up"></i> <span id="pendingCount">0</span> transaksi belum sinkron
+    </span>
+</div>
+
 <div class="row g-3">
     {{-- ══ KIRI: DAFTAR PRODUK ══ --}}
     <div class="col-lg-7">
@@ -94,12 +103,6 @@
         </div>
     </div>
 </div>
-
-{{-- Form tersembunyi untuk submit checkout --}}
-<form id="checkoutForm" action="{{ route('kasir.pos.checkout') }}" method="POST" style="display:none;">
-    @csrf
-    <div id="checkoutFields"></div>
-</form>
 
 @endsection
 
@@ -202,7 +205,147 @@
         });
     });
 
-    function submitCheckout() {
+    // ═══════════════════════════════════════════════════════════════
+    // OFFLINE SYNC — IndexedDB queue untuk transaksi saat koneksi putus
+    // ═══════════════════════════════════════════════════════════════
+    const CHECKOUT_URL = "{{ route('kasir.pos.checkout') }}";
+    const DB_NAME    = 'nikifrozen_offline_db';
+    const STORE_NAME = 'pending_transactions';
+
+    function openOfflineDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'client_txn_id' });
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror   = () => reject(req.error);
+        });
+    }
+
+    async function queuePendingTransaction(payload) {
+        const db = await openOfflineDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).put(payload);
+            tx.oncomplete = () => resolve();
+            tx.onerror    = () => reject(tx.error);
+        });
+    }
+
+    async function getPendingTransactions() {
+        const db = await openOfflineDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const req = tx.objectStore(STORE_NAME).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror   = () => reject(req.error);
+        });
+    }
+
+    async function removePendingTransaction(clientTxnId) {
+        const db = await openOfflineDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).delete(clientTxnId);
+            tx.oncomplete = () => resolve();
+            tx.onerror    = () => reject(tx.error);
+        });
+    }
+
+    function makeClientTxnId() {
+        return 'txn-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    // Error khusus: request tidak pernah sampai/dibalas server (offline / DNS gagal /
+    // timeout). Beda dengan error validasi (stok kurang, dsb) yang HARUS ditampilkan
+    // ke kasir, bukan ditumpuk ke antrian offline.
+    class NetworkUnreachableError extends Error {}
+
+    async function sendCheckout(payload) {
+        let res;
+        try {
+            res = await fetch(CHECKOUT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify(payload),
+            });
+        } catch (networkErr) {
+            // fetch() sendiri gagal (bukan response error) → benar-benar putus koneksi
+            throw new NetworkUnreachableError('Tidak dapat menghubungi server.');
+        }
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || data.success === false) {
+            const message = data?.message || 'Transaksi ditolak server.';
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    async function refreshPendingBadge() {
+        const pending = await getPendingTransactions();
+        const badge = document.getElementById('pendingStatus');
+        const count = document.getElementById('pendingCount');
+        count.textContent = pending.length;
+        badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
+    }
+
+    async function syncPendingTransactions() {
+        const pending = await getPendingTransactions();
+        for (const payload of pending) {
+            try {
+                await sendCheckout(payload);
+                await removePendingTransaction(payload.client_txn_id);
+            } catch (err) {
+                if (err instanceof NetworkUnreachableError) {
+                    // Masih putus di tengah proses sync — hentikan, sisanya dicoba lagi nanti.
+                    break;
+                }
+                // Error validasi (mis. stok berubah selama offline) — buang dari antrian
+                // supaya tidak macet, tapi tetap kasih tahu kasir untuk dicek manual.
+                await removePendingTransaction(payload.client_txn_id);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Transaksi offline gagal disinkronkan',
+                    text: err.message,
+                });
+            }
+        }
+        await refreshPendingBadge();
+    }
+
+    function updateConnBadge() {
+        const badge = document.getElementById('connStatus');
+        if (navigator.onLine) {
+            badge.className = 'badge rounded-pill text-bg-success';
+            badge.innerHTML = '<i class="bi bi-wifi"></i> Online';
+        } else {
+            badge.className = 'badge rounded-pill text-bg-danger';
+            badge.innerHTML = '<i class="bi bi-wifi-off"></i> Offline';
+        }
+    }
+
+    window.addEventListener('online', () => {
+        updateConnBadge();
+        syncPendingTransactions();
+    });
+    window.addEventListener('offline', updateConnBadge);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateConnBadge();
+        refreshPendingBadge();
+        syncPendingTransactions();
+    });
+
+    async function submitCheckout() {
         const total   = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
         const payment = parseFloat(document.getElementById('paymentInput').value) || 0;
 
@@ -215,18 +358,43 @@
             return;
         }
 
-        const fields = document.getElementById('checkoutFields');
-        fields.innerHTML = '';
+        const payload = {
+            client_txn_id: makeClientTxnId(),
+            items: cart.map(i => ({ id: i.id, qty: i.qty })),
+            payment: payment,
+        };
 
-        cart.forEach((item, idx) => {
-            fields.innerHTML += `
-                <input type="hidden" name="items[${idx}][id]" value="${item.id}">
-                <input type="hidden" name="items[${idx}][qty]" value="${item.qty}">
-            `;
-        });
-        fields.innerHTML += `<input type="hidden" name="payment" value="${payment}">`;
+        const btn = document.getElementById('btnCheckout');
+        btn.disabled = true;
 
-        document.getElementById('checkoutForm').submit();
+        try {
+            const data = await sendCheckout(payload);
+            Swal.fire({
+                icon: 'success',
+                title: 'Transaksi tersimpan',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false,
+            }).then(() => window.location.reload());
+        } catch (err) {
+            if (err instanceof NetworkUnreachableError) {
+                // Koneksi putus → simpan ke antrian lokal, jangan blokir kasir.
+                await queuePendingTransaction(payload);
+                await refreshPendingBadge();
+                cart = [];
+                renderCart();
+                document.getElementById('paymentInput').value = '';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tersimpan offline',
+                    text: 'Koneksi internet terputus. Transaksi disimpan di perangkat ini dan akan otomatis disinkronkan saat koneksi kembali.',
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Transaksi gagal', text: err.message });
+            }
+        } finally {
+            btn.disabled = cart.length === 0;
+        }
     }
 </script>
 @endpush

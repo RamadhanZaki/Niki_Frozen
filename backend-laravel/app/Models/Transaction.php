@@ -8,6 +8,7 @@ class Transaction extends Model
 {
     protected $fillable = [
         'invoice_number',
+        'client_txn_id',
         'user_id',
         'branch_id',
         'shift_id',
