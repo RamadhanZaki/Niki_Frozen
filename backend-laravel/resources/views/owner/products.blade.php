@@ -201,7 +201,11 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Harga <span class="text-danger">*</span></label>
-                            <input type="number" name="price" id="f_price" class="form-control" min="0" required>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" inputmode="numeric" id="f_price_display" class="form-control" required>
+                            </div>
+                            <input type="hidden" name="price" id="f_price">
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
@@ -246,6 +250,37 @@ const productModal = new bootstrap.Modal(document.getElementById('productModal')
 const catSelect = document.getElementById('f_category');
 const catCustom = document.getElementById('f_category_custom');
 
+// Format input Harga dengan titik ribuan sambil diketik, nilai mentahnya
+// (tanpa titik) disimpan di hidden input "price" yang benar-benar dikirim ke server.
+const priceDisplay = document.getElementById('f_price_display');
+const priceHidden  = document.getElementById('f_price');
+
+function setPriceValue(value) {
+    const rawDigits = String(value ?? '').replace(/\D/g, '');
+    priceDisplay.value = rawDigits ? Number(rawDigits).toLocaleString('id-ID') : '';
+    priceHidden.value = rawDigits;
+}
+
+priceDisplay.addEventListener('input', function () {
+    const digitsBeforeCursor = this.value.slice(0, this.selectionStart).replace(/\D/g, '').length;
+
+    const rawDigits = this.value.replace(/\D/g, '');
+    const formatted = rawDigits ? Number(rawDigits).toLocaleString('id-ID') : '';
+    this.value = formatted;
+    priceHidden.value = rawDigits;
+
+    let seenDigits = 0;
+    let pos = formatted.length;
+    for (let i = 0; i < formatted.length; i++) {
+        if (/\d/.test(formatted[i])) seenDigits++;
+        if (seenDigits === digitsBeforeCursor) {
+            pos = i + 1;
+            break;
+        }
+    }
+    this.setSelectionRange(pos, pos);
+});
+
 // Saat dropdown kategori berubah: tampilkan input manual jika "+ Kategori Baru..." dipilih
 function syncCategoryField() {
     if (catSelect.value === '__custom__') {
@@ -287,7 +322,7 @@ function openProductModal(data = null) {
 
         document.getElementById('f_name').value = data.name;
         setCategoryValue(data.category);
-        document.getElementById('f_price').value = data.price;
+        setPriceValue(data.price);
         document.getElementById('f_expired_date').value = data.expired_date.substring(0, 10);
         document.getElementById('f_branch_id').value = data.branch_id;
         document.getElementById('f_stock').value = data.stock;
@@ -298,6 +333,7 @@ function openProductModal(data = null) {
         form.action = '{{ route("owner.products.store") }}';
         methodField.innerHTML = '';
         form.reset();
+        setPriceValue('');
         setCategoryValue(catSelect.options[0]?.value ?? '');
         preview.src = '{{ asset("images/no-product.svg") }}';
     }

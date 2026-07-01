@@ -55,7 +55,11 @@
                         @csrf
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Modal Awal (Kas)</label>
-                            <input type="number" name="opening_cash" class="form-control" min="0" placeholder="Contoh: 100000" required>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" inputmode="numeric" id="openingCashInput" class="form-control" placeholder="Contoh: 100.000" required>
+                            </div>
+                            <input type="hidden" name="opening_cash" id="openingCashHidden">
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-play-circle me-1"></i> Buka Shift
@@ -131,7 +135,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Kas Akhir (Hasil Hitung Fisik)</label>
-                        <input type="number" name="closing_cash" class="form-control" min="0" placeholder="Masukkan jumlah kas riil" required>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" inputmode="numeric" id="closingCashInput" class="form-control" placeholder="Masukkan jumlah kas riil" required>
+                        </div>
+                        <input type="hidden" name="closing_cash" id="closingCashHidden">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -143,5 +151,42 @@
     </div>
 </div>
 @endif
+
+@push('scripts')
+<script>
+    // Format input dengan titik ribuan sambil diketik (mis. 100000 -> 100.000),
+    // sementara nilai mentahnya (tanpa titik) dikirim lewat hidden input supaya
+    // form tetap submit angka murni ke server.
+    function formatRupiahInput(input, hidden) {
+        const digitsBeforeCursor = input.value.slice(0, input.selectionStart).replace(/\D/g, '').length;
+
+        const rawDigits = input.value.replace(/\D/g, '');
+        const formatted = rawDigits ? Number(rawDigits).toLocaleString('id-ID') : '';
+        input.value = formatted;
+        hidden.value = rawDigits;
+
+        let seenDigits = 0;
+        let pos = formatted.length;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/\d/.test(formatted[i])) seenDigits++;
+            if (seenDigits === digitsBeforeCursor) {
+                pos = i + 1;
+                break;
+            }
+        }
+        input.setSelectionRange(pos, pos);
+    }
+
+    function setupRupiahInput(inputId, hiddenId) {
+        const input  = document.getElementById(inputId);
+        const hidden = document.getElementById(hiddenId);
+        if (!input || !hidden) return;
+        input.addEventListener('input', () => formatRupiahInput(input, hidden));
+    }
+
+    setupRupiahInput('openingCashInput', 'openingCashHidden');
+    setupRupiahInput('closingCashInput', 'closingCashHidden');
+</script>
+@endpush
 
 @endsection
