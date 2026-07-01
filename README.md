@@ -72,8 +72,7 @@ Pastikan tools berikut sudah terinstal sebelum memulai:
 Buka terminal / Git Bash, lalu jalankan:
 
 ```bash
-git clone https://github.com/RamadhanZaki/Niki_Frozen.git
-cd Niki_Frozen
+git clone https://github.com/RamadhanZaki/Niki_Frozen.git .
 ```
 
 ---
