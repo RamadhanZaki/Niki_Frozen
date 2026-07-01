@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\InvoiceCounter;
 use App\Models\Product;
 use App\Models\Shift;
 use App\Models\Transaction;
@@ -102,7 +103,7 @@ class KasirWebController extends Controller
 
         $transaction = DB::transaction(function () use ($cartData, $total, $request, $shift) {
             $transaction = Transaction::create([
-                'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . str_pad(Transaction::count() + 1, 4, '0', STR_PAD_LEFT),
+                'invoice_number' => $this->generateInvoiceNumber(),
                 'client_txn_id'  => $request->client_txn_id,
                 'user_id'        => Auth::id(),
                 'branch_id'      => session('branch_id'),
@@ -139,6 +140,45 @@ class KasirWebController extends Controller
         });
 
         return $this->checkoutResponse($wantsJson, $transaction, duplicate: false);
+    }
+
+    /**
+     * Generate nomor invoice yang aman dari race condition.
+     *
+     * Sebelumnya pakai Transaction::count()+1 yang dibaca lalu ditulis secara
+     * terpisah (read-then-write) — kalau dua checkout (misal beberapa transaksi
+     * offline yang sync bersamaan begitu koneksi pulih) masuk hampir bersamaan,
+     * keduanya bisa membaca count() yang sama sebelum insert manapun selesai,
+     * sehingga menghasilkan invoice_number dobel.
+     *
+     * Di sini counter disimpan di tabel terpisah (invoice_counters, satu baris
+     * per tanggal) dan baris tersebut di-lock dengan SELECT ... FOR UPDATE di
+     * dalam DB transaction yang sama dengan pembuatan Transaction. Request lain
+     * yang mencoba ambil nomor di hari yang sama akan menunggu (blocked) sampai
+     * transaksi pertama commit, baru dapat giliran. Ini menjamin nomor urut
+     * per hari tidak pernah bentrok, walau ada banyak checkout paralel.
+     */
+    private function generateInvoiceNumber(): string
+    {
+        $today = now()->format('Y-m-d');
+
+        // Baris counter untuk hari ini dibuat kalau belum ada (aman dipanggil
+        // berkali-kali karena counter_date unique + insertOrIgnore).
+        InvoiceCounter::query()->insertOrIgnore([
+            'counter_date' => $today,
+            'last_number'  => 0,
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
+
+        $counter = InvoiceCounter::where('counter_date', $today)
+            ->lockForUpdate()
+            ->first();
+
+        $nextNumber = $counter->last_number + 1;
+        $counter->update(['last_number' => $nextNumber]);
+
+        return 'INV-' . now()->format('Ymd') . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
     private function checkoutResponse(bool $wantsJson, Transaction $transaction, bool $duplicate)

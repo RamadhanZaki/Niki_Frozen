@@ -88,7 +88,10 @@
 
                 <div class="mb-2">
                     <label class="form-label small fw-semibold mb-1">Bayar</label>
-                    <input type="number" id="paymentInput" class="form-control" placeholder="Masukkan jumlah uang" min="0">
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" inputmode="numeric" id="paymentInput" class="form-control" placeholder="0">
+                    </div>
                 </div>
 
                 <div class="d-flex justify-content-between mb-3">
@@ -112,6 +115,36 @@
 
     function formatRp(n) {
         return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    // Ambil angka murni dari input Bayar (buang semua titik/karakter non-digit)
+    function getPaymentValue() {
+        const raw = document.getElementById('paymentInput').value.replace(/\D/g, '');
+        return raw ? parseInt(raw, 10) : 0;
+    }
+
+    // Format input Bayar dengan titik ribuan sambil diketik, tanpa
+    // mengganggu posisi kursor (dihitung dari kanan, bukan kiri).
+    function formatPaymentInput() {
+        const input = document.getElementById('paymentInput');
+        const digitsBeforeCursor = input.value.slice(0, input.selectionStart).replace(/\D/g, '').length;
+
+        const rawDigits = input.value.replace(/\D/g, '');
+        const formatted = rawDigits ? Number(rawDigits).toLocaleString('id-ID') : '';
+        input.value = formatted;
+
+        // Kembalikan posisi kursor ke jumlah digit yang sama dari kiri,
+        // dengan menghitung ulang termasuk titik yang baru ditambahkan.
+        let seenDigits = 0;
+        let pos = formatted.length;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/\d/.test(formatted[i])) seenDigits++;
+            if (seenDigits === digitsBeforeCursor) {
+                pos = i + 1;
+                break;
+            }
+        }
+        input.setSelectionRange(pos, pos);
     }
 
     function addToCart(product) {
@@ -191,12 +224,15 @@
         const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
         document.getElementById('cartTotal').textContent = formatRp(total);
 
-        const payment = parseFloat(document.getElementById('paymentInput').value) || 0;
+        const payment = getPaymentValue();
         const change  = payment - total;
         document.getElementById('cartChange').textContent = formatRp(change > 0 ? change : 0);
     }
 
-    document.getElementById('paymentInput').addEventListener('input', updateTotals);
+    document.getElementById('paymentInput').addEventListener('input', function () {
+        formatPaymentInput();
+        updateTotals();
+    });
 
     document.getElementById('searchProduct').addEventListener('input', function () {
         const keyword = this.value.toLowerCase();
@@ -347,7 +383,7 @@
 
     async function submitCheckout() {
         const total   = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-        const payment = parseFloat(document.getElementById('paymentInput').value) || 0;
+        const payment = getPaymentValue();
 
         if (cart.length === 0) {
             alert('Keranjang masih kosong.');

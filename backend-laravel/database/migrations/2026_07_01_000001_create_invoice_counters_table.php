@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        // Tabel counter terpisah supaya penomoran invoice per-hari bisa di-lock
+        // (SELECT ... FOR UPDATE) secara atomic saat beberapa transaksi (termasuk
+        // hasil sync offline) masuk hampir bersamaan. Jauh lebih aman daripada
+        // Transaction::count()+1 yang rawan race condition & duplikat.
+        Schema::create('invoice_counters', function (Blueprint $table) {
+            $table->id();
+            $table->date('counter_date')->unique();
+            $table->unsignedInteger('last_number')->default(0);
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('invoice_counters');
+    }
+};
