@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 30, 2026 at 11:54 AM
+-- Generation Time: Jul 01, 2026 at 09:54 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -102,6 +102,34 @@ CREATE TABLE `financial_reports` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `financial_reports`
+--
+
+INSERT INTO `financial_reports` (`id`, `branch_id`, `date`, `total_revenue`, `total_expense`, `net_profit`, `total_transactions`, `created_at`, `updated_at`) VALUES
+(1, 1, '2026-07-01', 142000.00, 0.00, 142000.00, 1, '2026-07-01 07:25:04', '2026-07-01 07:25:04');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `invoice_counters`
+--
+
+CREATE TABLE `invoice_counters` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `counter_date` date NOT NULL,
+  `last_number` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `invoice_counters`
+--
+
+INSERT INTO `invoice_counters` (`id`, `counter_date`, `last_number`, `created_at`, `updated_at`) VALUES
+(1, '2026-07-01', 2, '2026-07-01 06:49:22', '2026-07-01 07:25:04');
+
 -- --------------------------------------------------------
 
 --
@@ -169,7 +197,34 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (13, '2026_06_13_051857_create_settings_table', 11),
 (14, '2026_06_13_051956_create_stock_mutations_table', 11),
 (15, '2026_06_30_080547_add_image_to_products_table', 12),
-(16, '2026_06_30_090000_change_category_to_string_on_products_table', 13);
+(16, '2026_06_30_090000_change_category_to_string_on_products_table', 13),
+(17, '2026_07_01_000000_add_client_txn_id_to_transactions_table', 14),
+(18, '2026_07_01_000001_create_invoice_counters_table', 15),
+(19, '2026_07_01_000002_create_notifications_table', 16);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` char(36) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  `notifiable_type` varchar(255) NOT NULL,
+  `notifiable_id` bigint(20) UNSIGNED NOT NULL,
+  `data` text NOT NULL,
+  `read_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `type`, `notifiable_type`, `notifiable_id`, `data`, `read_at`, `created_at`, `updated_at`) VALUES
+('da91533d-b18f-4fa2-ab5e-2fa0ffc3d6da', 'App\\Notifications\\CashDifferenceNotification', 'App\\Models\\User', 1, '{\"title\":\"Selisih Kas Shift\",\"message\":\"Shift Marjukii di cabang Cabang Utama ditutup dengan selisih kas lebih Rp8.000.\",\"shift_id\":10,\"branch_id\":1,\"difference\":8000}', '2026-07-01 07:26:07', '2026-07-01 07:25:41', '2026-07-01 07:26:07');
 
 -- --------------------------------------------------------
 
@@ -236,16 +291,15 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `category`, `image`, `price`, `expired_date`, `branch_id`, `created_at`, `updated_at`) VALUES
-(1, 'Nugget Ayam', 'Frozen', NULL, 35000.00, '2025-12-31', 1, '2026-06-10 22:53:29', '2026-06-10 22:53:29'),
-(2, 'Sosis Solo', 'Frozen', NULL, 28000.00, '2025-11-30', 1, '2026-06-10 22:53:29', '2026-06-10 22:53:29'),
-(4, 'Kentang Goreng', 'Frozen', NULL, 20000.00, '2025-12-20', 1, '2026-06-10 22:53:29', '2026-06-10 22:53:29'),
-(6, 'Fiesta Chicken Nugget', 'Frozen', 'products/fJLCRM34fNRj9kt6WzLrVsi3a2XbN0iLtpMxqWFh.png', 55000.00, '2027-11-17', 1, '2026-06-10 22:53:29', '2026-06-30 02:00:05'),
-(7, 'Dimsum', 'Frozen', NULL, 25000.00, '2025-12-10', 1, '2026-06-10 22:53:29', '2026-06-10 22:53:29'),
-(8, 'Cireng', 'Tepung', 'products/WBW4yVhhscYT1OeB4X0UZ6ugqihD99X5uJIs8ftx.jpg', 10000.00, '2026-07-16', 2, '2026-06-10 22:53:29', '2026-06-30 02:46:44'),
-(9, 'Sosis Pip', 'Frozen', NULL, 8500.00, '2026-07-01', 1, '2026-06-11 03:58:58', '2026-06-23 01:55:39'),
-(10, 'todd', 'Frozen', NULL, 5000.00, '2026-06-11', 1, '2026-06-11 04:22:58', '2026-06-11 04:22:58'),
-(11, 'Fiesta Crispy Wings', 'Frozen', 'products/l9m20BTA7Owa58Dsksi9m8hCSrDzK8gvGDMGxExZ.jpg', 4555.00, '2026-06-17', 2, '2026-06-11 04:28:42', '2026-06-30 02:18:50'),
-(12, 'Fiesta Crispy Wings', 'Frozen', 'products/KGK8CF0yrvUDlMzWMailS6F2wNenR8XB7bzQEBfR.jpg', 10000.00, '2027-07-07', 1, '2026-06-30 02:21:25', '2026-06-30 02:21:25');
+(6, 'Fiesta Chicken Katsu 500g', 'Frozen', 'products/dP49Ke6WenklaLU3WoI9aPBqt3yo60SjBYTc3FZ6.jpg', 46000.00, '2027-11-16', 1, '2026-06-10 22:53:29', '2026-07-01 05:44:33'),
+(7, 'Fiesta Chicken Ring 500g', 'Frozen', 'products/bC9liFF7pKERxw8DMHNZCzZwKazog4LRJa1MMb6J.jpg', 48000.00, '2027-06-15', 1, '2026-06-10 22:53:29', '2026-07-01 05:46:10'),
+(11, 'Fiesta Crispy Wings 500g', 'Frozen', 'products/l9m20BTA7Owa58Dsksi9m8hCSrDzK8gvGDMGxExZ.jpg', 75000.00, '2027-07-07', 2, '2026-06-11 04:28:42', '2026-07-01 05:43:21'),
+(12, 'Fiesta Crispy Wings 500g', 'Frozen', 'products/KGK8CF0yrvUDlMzWMailS6F2wNenR8XB7bzQEBfR.jpg', 75000.00, '2027-07-07', 1, '2026-06-30 02:21:25', '2026-07-01 05:43:48'),
+(13, 'Fiesta Chicken Ring 500g', 'Frozen', 'products/0zkIqk5mspQ9VipTS9UXNoqidWBpdqxMf2KyeOlt.jpg', 48000.00, '2027-06-15', 2, '2026-07-01 05:39:28', '2026-07-01 05:39:49'),
+(14, 'Fiesta Chicken Katsu 500g', 'Frozen', 'products/GMDzrZwkstEUkkmZ8SVbHkUBxQfI0L5mLnSTFy2Q.jpg', 46000.00, '2027-11-16', 2, '2026-07-01 05:45:15', '2026-07-01 05:45:37'),
+(15, 'Fiesta Cordon Bleu 500g', 'Frozen', 'products/5jain89C35X5tdIpM3vYU6Q1vQ5OUnaCcQUpGBK7.jpg', 59500.00, '2026-08-02', 1, '2026-07-01 05:47:22', '2026-07-01 05:47:22'),
+(16, 'Fiesta Cordon Bleu 500g', 'Frozen', 'products/dNUO4ns2SG8cKEm8yBcgUb1oFtcyCiq7myZKc3Ny.jpg', 59500.00, '2026-08-02', 2, '2026-07-01 05:48:01', '2026-07-01 05:48:01'),
+(17, 'Fiesta Pop Bites 500g', 'Frozen', 'products/dTFGT7QzpApqtFgmsXdztBOP8tgA4STQHACEtK3Q.jpg', 52500.00, '2026-07-10', 1, '2026-07-01 05:49:18', '2026-07-01 05:49:18');
 
 -- --------------------------------------------------------
 
@@ -267,9 +321,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('4FjmTlLKjkYKE2GeQKAvNoOv3Lbl8mdnJFbdsEMS', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.126.0 Chrome/148.0.7778.97 Electron/42.2.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVzBmYXZObDRSNmJoenBxN2RtRDJiZzVTTVFqNThIejFFd2d5ejR3eCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1782807397),
-('ayPDDe4jqUhT80tFESwcSRde2678GW1f2EnsDk21', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiSmM3NklaUEFDUjE3c1UyTmFDbWpyc1lOTGh6aG9YU0lGeDJqbE1nWSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9vd25lci9kYXNoYm9hcmQiO3M6NToicm91dGUiO3M6MTU6Im93bmVyLmRhc2hib2FyZCI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo0OiJuYW1lIjtzOjE4OiJPd25lciBOaWNreSBGcm96ZW4iO3M6NDoicm9sZSI7czo1OiJvd25lciI7czo5OiJicmFuY2hfaWQiO047fQ==', 1782811949),
-('H8HExdSF3s3AAQ8SasaTO4irExNO4SiYFLufEmhW', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiY0lNR3RYNlY1MnpsZXo5dm5rR0RmOHlPUllxTDJUT1d1b1BlUElhayI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9vd25lci91c2VycyI7czo1OiJyb3V0ZSI7czoxMToib3duZXIudXNlcnMiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6NDoibmFtZSI7czoxODoiT3duZXIgTmlja3kgRnJvemVuIjtzOjQ6InJvbGUiO3M6NToib3duZXIiO3M6OToiYnJhbmNoX2lkIjtOO30=', 1782813235);
+('77l47EAKRdsc8P0dicdCk2eHVgyIGSeqkKTnmM4s', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.126.0 Chrome/148.0.7778.97 Electron/42.2.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNzkzeUFnQkxUUmZqQ2ZsaFBpa3FNaHFCZmN3YnlHcExWVHVKdjluVSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1782890549),
+('am7pryMDmJVq7Ldy1cWt2skaioVSnxz7motyUoBn', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoicWNjMDdlZnc5WVJMRjQ1S2FaQXVQTEdYRkEzODRWRmppdEtTRGNNSiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9vd25lci9icmFuY2hlcyI7czo1OiJyb3V0ZSI7czoxNDoib3duZXIuYnJhbmNoZXMiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6NDoibmFtZSI7czoxODoiT3duZXIgTmlja3kgRnJvemVuIjtzOjQ6InJvbGUiO3M6NToib3duZXIiO3M6OToiYnJhbmNoX2lkIjtOO30=', 1782892059),
+('tMAEjBsZPasct97IEqro3CwOAdxoSKN6Z8JvE0Iw', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVlNBNnhDZVpkV3NieEs4cnVaTzdaT1lVN0RKNUw0bThYc2tFWWt1dyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1782890566);
 
 -- --------------------------------------------------------
 
@@ -297,7 +351,9 @@ INSERT INTO `settings` (`id`, `key`, `value`, `label`, `type`, `created_at`, `up
 (3, 'store_address', 'Jl. Ring Road Utara, Ngringin, Condongcatur, Kec. Depok, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55281', 'Alamat Toko', 'text', '2026-06-12 22:26:50', '2026-06-12 23:04:13'),
 (4, 'store_phone', '081234567890', 'No. Telepon Toko', 'text', '2026-06-12 22:26:50', '2026-06-12 23:03:52'),
 (5, 'low_stock_threshold', '10', 'Batas Stok Menipis', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50'),
-(6, 'expiry_warning_days', '7', 'Peringatan Expired (hari)', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50');
+(6, 'expiry_warning_days', '7', 'Peringatan Expired (hari)', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50'),
+(7, 'tax_percent', '0', NULL, 'text', '2026-06-30 10:04:08', '2026-06-30 10:04:08'),
+(8, 'receipt_note', 'Terima kasih telah berbelanja!', NULL, 'text', '2026-06-30 10:04:08', '2026-06-30 10:04:08');
 
 -- --------------------------------------------------------
 
@@ -333,7 +389,10 @@ INSERT INTO `shifts` (`id`, `user_id`, `branch_id`, `opening_cash`, `closing_cas
 (4, 5, 1, 10000.00, 118000.00, 118000.00, 0.00, 108000.00, 1, 'tutup', '2026-06-30 01:02:09', '2026-06-30 01:03:16', '2026-06-30 01:02:09', '2026-06-30 01:03:16'),
 (5, 5, 1, 0.00, 63000.00, 63000.00, 0.00, 63000.00, 2, 'tutup', '2026-06-30 01:18:21', '2026-06-30 02:17:09', '2026-06-30 01:18:21', '2026-06-30 02:17:09'),
 (6, 5, 1, 0.00, 0.00, 0.00, 0.00, 0.00, 0, 'tutup', '2026-06-30 02:19:08', '2026-06-30 09:51:56', '2026-06-30 02:19:08', '2026-06-30 09:51:56'),
-(7, 5, 1, 0.00, 65000.00, 65000.00, 0.00, 65000.00, 1, 'tutup', '2026-06-30 09:52:06', '2026-06-30 09:52:48', '2026-06-30 09:52:06', '2026-06-30 09:52:48');
+(7, 5, 1, 0.00, 65000.00, 65000.00, 0.00, 65000.00, 1, 'tutup', '2026-06-30 09:52:06', '2026-06-30 09:52:48', '2026-06-30 09:52:06', '2026-06-30 09:52:48'),
+(8, 5, 1, 0.00, 46000.00, 46000.00, 0.00, 46000.00, 1, 'tutup', '2026-07-01 06:48:24', '2026-07-01 06:49:39', '2026-07-01 06:48:24', '2026-07-01 06:49:39'),
+(9, 5, 1, 0.00, 0.00, 0.00, 0.00, 0.00, 0, 'tutup', '2026-07-01 06:51:57', '2026-07-01 06:52:20', '2026-07-01 06:51:57', '2026-07-01 06:52:20'),
+(10, 5, 1, 0.00, 150000.00, 142000.00, 8000.00, 142000.00, 1, 'tutup', '2026-07-01 07:24:53', '2026-07-01 07:25:40', '2026-07-01 07:24:53', '2026-07-01 07:25:40');
 
 -- --------------------------------------------------------
 
@@ -355,16 +414,15 @@ CREATE TABLE `stocks` (
 --
 
 INSERT INTO `stocks` (`id`, `product_id`, `branch_id`, `quantity`, `min_stock`, `updated_at`) VALUES
-(1, 1, 1, 43, 10, '2026-06-10 22:53:29'),
-(2, 2, 1, 6, 10, '2026-06-10 22:53:29'),
-(4, 4, 1, 27, 10, '2026-06-10 22:53:29'),
-(6, 6, 1, 99, 10, '2026-06-10 22:53:29'),
-(7, 7, 1, 13, 10, '2026-06-10 22:53:29'),
-(8, 8, 2, 13, 10, '2026-06-11 04:27:16'),
-(9, 9, 1, 1000, 10, NULL),
-(10, 10, 1, 5, 10, NULL),
-(11, 11, 2, 102, 10, '2026-06-30 02:20:06'),
-(12, 12, 1, 17, 10, NULL);
+(6, 6, 1, 98, 10, '2026-06-10 22:53:29'),
+(7, 7, 1, 98, 10, '2026-06-10 22:53:29'),
+(11, 11, 2, 100, 10, '2026-06-30 02:20:06'),
+(12, 12, 1, 100, 10, NULL),
+(13, 13, 2, 100, 10, NULL),
+(14, 14, 2, 100, 10, NULL),
+(15, 15, 1, 100, 10, NULL),
+(16, 16, 2, 100, 10, NULL),
+(17, 17, 1, 100, 10, NULL);
 
 -- --------------------------------------------------------
 
@@ -402,6 +460,7 @@ INSERT INTO `stock_mutations` (`id`, `product_id`, `branch_id`, `user_id`, `type
 CREATE TABLE `transactions` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `invoice_number` varchar(20) NOT NULL,
+  `client_txn_id` varchar(64) DEFAULT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `branch_id` bigint(20) UNSIGNED NOT NULL,
   `shift_id` bigint(20) UNSIGNED NOT NULL,
@@ -419,13 +478,15 @@ CREATE TABLE `transactions` (
 -- Dumping data for table `transactions`
 --
 
-INSERT INTO `transactions` (`id`, `invoice_number`, `user_id`, `branch_id`, `shift_id`, `total`, `payment`, `change_amount`, `status`, `sync_status`, `synced_at`, `created_at`, `updated_at`) VALUES
-(1, 'INV-20260618-0001', 2, 1, 2, 20000.00, 50000.00, 30000.00, 'sukses', 'tersinkronisasi', '2026-06-18 02:00:26', '2026-06-18 02:00:26', '2026-06-18 02:00:26'),
-(2, 'INV-20260618-0002', 2, 1, 3, 25000.00, 50000.00, 25000.00, 'sukses', 'tersinkronisasi', '2026-06-18 03:01:59', '2026-06-18 03:01:59', '2026-06-18 03:01:59'),
-(3, 'INV-20260630-0003', 5, 1, 4, 108000.00, 150000.00, 42000.00, 'sukses', 'tersinkronisasi', '2026-06-30 01:02:55', '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
-(4, 'INV-20260630-0004', 5, 1, 5, 28000.00, 50000.00, 22000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:12:33', '2026-06-30 02:12:33', '2026-06-30 02:12:33'),
-(5, 'INV-20260630-0005', 5, 1, 5, 35000.00, 70000.00, 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:13:01', '2026-06-30 02:13:01', '2026-06-30 02:13:01'),
-(6, 'INV-20260630-0006', 5, 1, 7, 65000.00, 100000.00, 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 09:52:24', '2026-06-30 09:52:24', '2026-06-30 09:52:24');
+INSERT INTO `transactions` (`id`, `invoice_number`, `client_txn_id`, `user_id`, `branch_id`, `shift_id`, `total`, `payment`, `change_amount`, `status`, `sync_status`, `synced_at`, `created_at`, `updated_at`) VALUES
+(1, 'INV-20260618-0001', NULL, 2, 1, 2, 20000.00, 50000.00, 30000.00, 'sukses', 'tersinkronisasi', '2026-06-18 02:00:26', '2026-06-18 02:00:26', '2026-06-18 02:00:26'),
+(2, 'INV-20260618-0002', NULL, 2, 1, 3, 25000.00, 50000.00, 25000.00, 'sukses', 'tersinkronisasi', '2026-06-18 03:01:59', '2026-06-18 03:01:59', '2026-06-18 03:01:59'),
+(3, 'INV-20260630-0003', NULL, 5, 1, 4, 108000.00, 150000.00, 42000.00, 'sukses', 'tersinkronisasi', '2026-06-30 01:02:55', '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
+(4, 'INV-20260630-0004', NULL, 5, 1, 5, 28000.00, 50000.00, 22000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:12:33', '2026-06-30 02:12:33', '2026-06-30 02:12:33'),
+(5, 'INV-20260630-0005', NULL, 5, 1, 5, 35000.00, 70000.00, 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:13:01', '2026-06-30 02:13:01', '2026-06-30 02:13:01'),
+(6, 'INV-20260630-0006', NULL, 5, 1, 7, 65000.00, 100000.00, 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 09:52:24', '2026-06-30 09:52:24', '2026-06-30 09:52:24'),
+(7, 'INV-20260701-0001', 'txn-1782888561925-3iw1t8tw', 5, 1, 8, 46000.00, 100000.00, 54000.00, 'sukses', 'tersinkronisasi', '2026-07-01 06:49:22', '2026-07-01 06:49:22', '2026-07-01 06:49:22'),
+(8, 'INV-20260701-0002', 'txn-1782890704251-mb7d1gqx', 5, 1, 10, 142000.00, 200000.00, 58000.00, 'sukses', 'tersinkronisasi', '2026-07-01 07:25:04', '2026-07-01 07:25:04', '2026-07-01 07:25:04');
 
 -- --------------------------------------------------------
 
@@ -449,16 +510,13 @@ CREATE TABLE `transaction_details` (
 --
 
 INSERT INTO `transaction_details` (`id`, `transaction_id`, `product_id`, `qty`, `price_at_sale`, `subtotal`, `created_at`, `updated_at`) VALUES
-(1, 1, 8, 2, 10000.00, 20000.00, '2026-06-18 02:00:26', '2026-06-18 02:00:26'),
 (2, 2, 7, 1, 25000.00, 25000.00, '2026-06-18 03:01:59', '2026-06-18 03:01:59'),
-(3, 3, 1, 1, 35000.00, 35000.00, '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
-(4, 3, 4, 1, 20000.00, 20000.00, '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
-(5, 3, 2, 1, 28000.00, 28000.00, '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
 (6, 3, 7, 1, 25000.00, 25000.00, '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
-(7, 4, 2, 1, 28000.00, 28000.00, '2026-06-30 02:12:33', '2026-06-30 02:12:33'),
-(8, 5, 1, 1, 35000.00, 35000.00, '2026-06-30 02:13:01', '2026-06-30 02:13:01'),
 (9, 6, 6, 1, 55000.00, 55000.00, '2026-06-30 09:52:24', '2026-06-30 09:52:24'),
-(10, 6, 12, 1, 10000.00, 10000.00, '2026-06-30 09:52:24', '2026-06-30 09:52:24');
+(10, 6, 12, 1, 10000.00, 10000.00, '2026-06-30 09:52:24', '2026-06-30 09:52:24'),
+(11, 7, 6, 1, 46000.00, 46000.00, '2026-07-01 06:49:22', '2026-07-01 06:49:22'),
+(12, 8, 6, 1, 46000.00, 46000.00, '2026-07-01 07:25:04', '2026-07-01 07:25:04'),
+(13, 8, 7, 2, 48000.00, 96000.00, '2026-07-01 07:25:04', '2026-07-01 07:25:04');
 
 -- --------------------------------------------------------
 
@@ -485,10 +543,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`, `branch_id`, `status`) VALUES
-(1, 'Owner Nicky Frozen', 'owner@nicksfrozen.com', NULL, '$2y$12$elwss0hHgNi7iLhPpVvslO9v7NIdoIs5eoCqyuBTsIjxsD.ZwZqge', 'owner', 'lFrDypl3xYn7jIUbqJbS4J0Xlg70n2uAhH8XrUM7eASbmIaFw2d530MrXOhM', '2026-06-10 22:53:27', '2026-06-10 22:53:27', NULL, 'aktif'),
+(1, 'Owner Nicky Frozen', 'owner@nicksfrozen.com', NULL, '$2y$12$elwss0hHgNi7iLhPpVvslO9v7NIdoIs5eoCqyuBTsIjxsD.ZwZqge', 'owner', 'Q2Lx5hJwZuO3CU3eZGkZnyAIE8ZsLJyl9RTkYfM1jhKZoT5YRgN7jhnq8MID', '2026-06-10 22:53:27', '2026-06-10 22:53:27', NULL, 'aktif'),
 (2, 'Siti Aisyah', 'siti@nicksfrozen.com', NULL, '$2y$12$rk7Myg1amAJ4trp2WmymEetzcKm7fk6aI1z.eKTn2wlqrRBxPb2CS', 'kasir', NULL, '2026-06-10 22:53:27', '2026-06-23 01:56:45', 2, 'aktif'),
 (3, 'Budi Santoso', 'budi@nicksfrozen.com', NULL, '$2y$12$.93gEZjRWkhSM5rlI3woouakW0w8VA0BkrXXESrYC1BkTtF/lA9d6', 'kasir', NULL, '2026-06-10 22:53:28', '2026-06-10 22:53:28', 2, 'aktif'),
-(5, 'Marjukii', 'ramadhanzaki@students.amikom.ac.id', NULL, '$2y$12$g1e7ZTJlFHWcpxvTswzwVeGWQJevrrq7hXkn3Xhc6FZnB654IIY7m', 'kasir', 'UmzywtcY4fSdNvMLrcflMoACcpAkDkKlaIdK8PDIbgL2g9rprOxnc1BBJn4e', '2026-06-11 01:28:47', '2026-06-30 00:55:31', 1, 'aktif'),
+(5, 'Marjukii', 'ramadhanzaki@students.amikom.ac.id', NULL, '$2y$12$g1e7ZTJlFHWcpxvTswzwVeGWQJevrrq7hXkn3Xhc6FZnB654IIY7m', 'kasir', 'N2XGFzxDk4W4WW2UvLDKhYzqcAepL8ObXLSStDH4GxOB7NW9oGN2eGN4cPaT', '2026-06-11 01:28:47', '2026-06-30 00:55:31', 1, 'aktif'),
 (6, 'ronaldo', 'ronaldo@gmail.com', NULL, '$2y$12$zsoyEEKkYPmGahbPgB6CWeztogDnw0rdPuJ04dKCRp83xGRCIqqIm', 'kasir', NULL, '2026-06-18 00:18:34', '2026-06-18 00:18:34', 2, 'aktif');
 
 --
@@ -530,6 +588,13 @@ ALTER TABLE `financial_reports`
   ADD UNIQUE KEY `financial_reports_branch_id_date_unique` (`branch_id`,`date`);
 
 --
+-- Indexes for table `invoice_counters`
+--
+ALTER TABLE `invoice_counters`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `invoice_counters_counter_date_unique` (`counter_date`);
+
+--
 -- Indexes for table `jobs`
 --
 ALTER TABLE `jobs`
@@ -547,6 +612,13 @@ ALTER TABLE `job_batches`
 --
 ALTER TABLE `migrations`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `notifications_notifiable_type_notifiable_id_index` (`notifiable_type`,`notifiable_id`);
 
 --
 -- Indexes for table `password_reset_tokens`
@@ -616,6 +688,7 @@ ALTER TABLE `stock_mutations`
 ALTER TABLE `transactions`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `transactions_invoice_number_unique` (`invoice_number`),
+  ADD UNIQUE KEY `transactions_client_txn_id_unique` (`client_txn_id`),
   ADD KEY `transactions_user_id_foreign` (`user_id`),
   ADD KEY `transactions_branch_id_foreign` (`branch_id`),
   ADD KEY `transactions_shift_id_foreign` (`shift_id`);
@@ -656,7 +729,13 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT for table `financial_reports`
 --
 ALTER TABLE `financial_reports`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `invoice_counters`
+--
+ALTER TABLE `invoice_counters`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `jobs`
@@ -668,7 +747,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
@@ -680,25 +759,25 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `settings`
 --
 ALTER TABLE `settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `shifts`
 --
 ALTER TABLE `shifts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `stocks`
 --
 ALTER TABLE `stocks`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `stock_mutations`
@@ -710,13 +789,13 @@ ALTER TABLE `stock_mutations`
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `transaction_details`
 --
 ALTER TABLE `transaction_details`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `users`
