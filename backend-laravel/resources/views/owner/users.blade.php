@@ -102,7 +102,7 @@
                                 <i class="bi bi-key"></i>
                             </button>
                             <form action="{{ route('owner.users.destroy', $u->id) }}" method="POST" class="d-inline"
-                                  onsubmit="return confirm('Hapus akun kasir {{ $u->name }}?')">
+                                  onsubmit="return confirmDelete(this, 'Akun kasir {{ $u->name }} akan dihapus secara permanen.')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
