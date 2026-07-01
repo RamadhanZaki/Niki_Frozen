@@ -34,19 +34,38 @@ class KasirWebController extends Controller
 
     public function checkout(Request $request)
     {
+        $wantsJson = $request->wantsJson() || $request->ajax();
+
         $request->validate([
             'items'             => 'required|array|min:1',
             'items.*.id'        => 'required|exists:products,id',
             'items.*.qty'       => 'required|integer|min:1',
             'payment'           => 'required|numeric|min:0',
+            // Dikirim oleh JS kasir (dibuat di browser). Dipakai untuk mencegah
+            // transaksi tersimpan dobel kalau request sync offline dikirim ulang.
+            'client_txn_id'     => 'nullable|string|max:64',
         ]);
+
+        // ── Idempotency check ───────────────────────────────────────────
+        // Kalau transaksi dengan client_txn_id ini sudah pernah tersimpan
+        // (misal koneksi putus setelah server sukses simpan tapi sebelum
+        // browser terima response), langsung anggap sukses tanpa proses ulang.
+        if ($request->client_txn_id) {
+            $existing = Transaction::where('client_txn_id', $request->client_txn_id)->first();
+            if ($existing) {
+                return $this->checkoutResponse($wantsJson, $existing, duplicate: true);
+            }
+        }
 
         $shift = Shift::where('user_id', Auth::id())
             ->whereNull('closed_at')
             ->latest()->first();
 
         if (!$shift) {
-            return back()->with('error', 'Shift tidak aktif. Silakan buka shift terlebih dahulu.');
+            $message = 'Shift tidak aktif. Silakan buka shift terlebih dahulu.';
+            return $wantsJson
+                ? response()->json(['success' => false, 'message' => $message], 422)
+                : back()->with('error', $message);
         }
 
         // Hitung total & validasi stok dulu sebelum simpan apa pun
@@ -58,7 +77,10 @@ class KasirWebController extends Controller
             $stock   = $product->stock;
 
             if (!$stock || $stock->quantity < $item['qty']) {
-                return back()->with('error', "Stok {$product->name} tidak cukup.");
+                $message = "Stok {$product->name} tidak cukup.";
+                return $wantsJson
+                    ? response()->json(['success' => false, 'message' => $message], 422)
+                    : back()->with('error', $message);
             }
 
             $subtotal = $product->price * $item['qty'];
@@ -72,12 +94,16 @@ class KasirWebController extends Controller
         }
 
         if ($request->payment < $total) {
-            return back()->with('error', 'Jumlah pembayaran kurang dari total belanja.');
+            $message = 'Jumlah pembayaran kurang dari total belanja.';
+            return $wantsJson
+                ? response()->json(['success' => false, 'message' => $message], 422)
+                : back()->with('error', $message);
         }
 
         $transaction = DB::transaction(function () use ($cartData, $total, $request, $shift) {
             $transaction = Transaction::create([
                 'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . str_pad(Transaction::count() + 1, 4, '0', STR_PAD_LEFT),
+                'client_txn_id'  => $request->client_txn_id,
                 'user_id'        => Auth::id(),
                 'branch_id'      => session('branch_id'),
                 'shift_id'       => $shift->id,
@@ -85,6 +111,9 @@ class KasirWebController extends Controller
                 'payment'        => $request->payment,
                 'change_amount'  => $request->payment - $total,
                 'status'         => 'sukses',
+                // Kalau request ini datang lewat sync offline (ada client_txn_id
+                // dan dikirim setelah delay), tetap ditandai tersinkronisasi karena
+                // pada titik ini transaksi sudah berhasil sampai ke server.
                 'sync_status'    => 'tersinkronisasi',
                 'synced_at'      => now(),
             ]);
@@ -108,6 +137,20 @@ class KasirWebController extends Controller
 
             return $transaction;
         });
+
+        return $this->checkoutResponse($wantsJson, $transaction, duplicate: false);
+    }
+
+    private function checkoutResponse(bool $wantsJson, Transaction $transaction, bool $duplicate)
+    {
+        if ($wantsJson) {
+            return response()->json([
+                'success'         => true,
+                'duplicate'       => $duplicate,
+                'invoice_number'  => $transaction->invoice_number,
+                'message'         => "Transaksi {$transaction->invoice_number} berhasil disimpan.",
+            ]);
+        }
 
         return redirect()->route('kasir.pos')
             ->with('success', "Transaksi {$transaction->invoice_number} berhasil disimpan.");
