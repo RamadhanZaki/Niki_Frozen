@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <style>
         :root {
@@ -278,6 +279,54 @@
             #sidebar-toggle { display: block; }
             #sidebar-overlay.show { display: block; }
         }
+
+        /* ── SWEETALERT2 (confirm dialogs) ── */
+        .nk-swal-popup {
+            border-radius: 18px !important;
+            font-family: 'Inter', sans-serif !important;
+            padding: 28px 24px 26px !important;
+        }
+        .nk-swal-popup .swal2-icon {
+            width: 4.2em;
+            height: 4.2em;
+            margin: 0 auto 16px;
+        }
+        .nk-swal-popup .swal2-icon.swal2-warning {
+            border-color: var(--nk-warning);
+            color: var(--nk-warning);
+        }
+        .nk-swal-popup .swal2-icon.swal2-error {
+            border-color: var(--nk-danger);
+            color: var(--nk-danger);
+        }
+        .nk-swal-title {
+            font-size: 1.15rem !important;
+            font-weight: 700 !important;
+            color: #1e293b !important;
+            padding-top: 0 !important;
+        }
+        .nk-swal-text {
+            font-size: .85rem !important;
+            color: #64748b !important;
+        }
+        .nk-swal-confirm {
+            border-radius: 9px !important;
+            font-weight: 600 !important;
+            font-size: .82rem !important;
+            padding: 9px 22px !important;
+            box-shadow: none !important;
+        }
+        .nk-swal-cancel {
+            border-radius: 9px !important;
+            font-weight: 600 !important;
+            font-size: .82rem !important;
+            padding: 9px 22px !important;
+            box-shadow: none !important;
+        }
+        .nk-swal-popup .swal2-actions {
+            gap: 10px;
+            margin-top: 18px !important;
+        }
     </style>
 
     @stack('styles')
@@ -425,6 +474,39 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    /**
+     * Konfirmasi hapus data dengan tampilan SweetAlert2 senada tema Niki Frozen.
+     * Dipanggil dari onsubmit form: onsubmit="return confirmDelete(this, 'Pesan detail...')"
+     */
+    function confirmDelete(form, text = 'ingin menghapus data ini!', title = 'Apakah Kamu Yakin?') {
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Tidak',
+            confirmButtonColor: '#7367f0',
+            cancelButtonColor: '#64748b',
+            reverseButtons: false,
+            focusCancel: true,
+            customClass: {
+                popup: 'nk-swal-popup',
+                title: 'nk-swal-title',
+                htmlContainer: 'nk-swal-text',
+                confirmButton: 'nk-swal-confirm',
+                cancelButton: 'nk-swal-cancel',
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+        return false; // cegah submit langsung, form baru submit setelah dikonfirmasi
+    }
+</script>
 <script>
     const sidebar   = document.getElementById('sidebar');
     const overlay   = document.getElementById('sidebar-overlay');

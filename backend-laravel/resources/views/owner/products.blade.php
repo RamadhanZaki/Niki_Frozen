@@ -144,7 +144,7 @@
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form action="{{ route('owner.products.destroy', $p->id) }}" method="POST" class="d-inline"
-                                  onsubmit="return confirm('Hapus produk {{ $p->name }}?')">
+                                  onsubmit="return confirmDelete(this, 'Produk {{ $p->name }} akan dihapus secara permanen.')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
