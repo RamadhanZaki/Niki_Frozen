@@ -436,9 +436,46 @@
         </nav>
     @endif
 
-    <a href="#" class="topbar-badge">
-        <i class="bi bi-bell" style="font-size:.9rem;"></i>
-    </a>
+    @php
+        $unreadNotifications = auth()->check()
+            ? auth()->user()->unreadNotifications()->latest()->limit(5)->get()
+            : collect();
+        $unreadCount = auth()->check() ? auth()->user()->unreadNotifications()->count() : 0;
+    @endphp
+
+    <div class="dropdown">
+        <a href="#" class="topbar-badge position-relative" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-bell" style="font-size:.9rem;"></i>
+            @if($unreadCount > 0)
+                <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
+                      style="font-size:.55rem; padding:3px 5px;">
+                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+                </span>
+            @endif
+        </a>
+        <div class="dropdown-menu dropdown-menu-end p-0" style="width:320px; max-height:400px; overflow-y:auto;">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                <span class="fw-semibold small">Notifikasi</span>
+                @if($unreadCount > 0)
+                    <form method="POST" action="{{ route('notifications.readAll') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-link btn-sm p-0" style="font-size:.75rem;">
+                            Tandai semua dibaca
+                        </button>
+                    </form>
+                @endif
+            </div>
+            @forelse($unreadNotifications as $notif)
+                <div class="px-3 py-2 border-bottom small">
+                    <div class="fw-semibold">{{ $notif->data['title'] ?? 'Notifikasi' }}</div>
+                    <div class="text-muted" style="font-size:.75rem;">{{ $notif->data['message'] ?? '' }}</div>
+                    <div class="text-muted" style="font-size:.7rem;">{{ $notif->created_at->diffForHumans() }}</div>
+                </div>
+            @empty
+                <div class="px-3 py-4 text-center text-muted small">Tidak ada notifikasi baru</div>
+            @endforelse
+        </div>
+    </div>
 </header>
 
 {{-- ══ MAIN ══ --}}

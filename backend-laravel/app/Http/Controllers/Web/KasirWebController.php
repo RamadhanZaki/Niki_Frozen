@@ -8,9 +8,12 @@ use App\Models\Product;
 use App\Models\Shift;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\User;
+use App\Notifications\CashDifferenceNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class KasirWebController extends Controller
 {
@@ -136,6 +139,23 @@ class KasirWebController extends Controller
             $shift->increment('total_sales', $total);
             $shift->increment('total_transactions');
 
+            // ── Ringkasan keuangan harian per cabang (financial_reports) ──
+            // Upsert atomic pakai raw query: kalau baris (branch_id, date)
+            // sudah ada, nilai baru DITAMBAHKAN (bukan ditimpa), sehingga aman
+            // dipanggil dari banyak transaksi paralel tanpa race condition —
+            // sama seperti pendekatan invoice_counters di generateInvoiceNumber().
+            DB::statement(
+                'INSERT INTO financial_reports
+                    (branch_id, date, total_revenue, total_expense, net_profit, total_transactions, created_at, updated_at)
+                 VALUES (?, ?, ?, 0, ?, 1, NOW(), NOW())
+                 ON DUPLICATE KEY UPDATE
+                    total_revenue = total_revenue + VALUES(total_revenue),
+                    net_profit = net_profit + VALUES(net_profit),
+                    total_transactions = total_transactions + 1,
+                    updated_at = NOW()',
+                [$shift->branch_id, now()->toDateString(), $total, $total]
+            );
+
             return $transaction;
         });
 
@@ -189,11 +209,26 @@ class KasirWebController extends Controller
                 'duplicate'       => $duplicate,
                 'invoice_number'  => $transaction->invoice_number,
                 'message'         => "Transaksi {$transaction->invoice_number} berhasil disimpan.",
+                'receipt_url'     => route('kasir.pos.receipt', $transaction->id),
             ]);
         }
 
         return redirect()->route('kasir.pos')
             ->with('success', "Transaksi {$transaction->invoice_number} berhasil disimpan.");
+    }
+
+    /**
+     * Halaman struk transaksi — dibuka lewat tab baru dari POS dan bisa
+     * dicetak langsung (window.print()) sesuai UC-01 langkah 6.
+     */
+    public function receipt(Transaction $transaction)
+    {
+        // Kasir cuma boleh lihat struk transaksinya sendiri.
+        abort_unless($transaction->user_id === Auth::id(), 403);
+
+        $transaction->load('details.product', 'user', 'branch');
+
+        return view('kasir.receipt', compact('transaction'));
     }
 
     public function shift()
@@ -248,14 +283,23 @@ class KasirWebController extends Controller
         }
 
         $expected = $shift->opening_cash + $shift->total_sales;
+        $difference = $request->closing_cash - $expected;
 
         $shift->update([
             'closing_cash'  => $request->closing_cash,
             'expected_cash' => $expected,
-            'difference'    => $request->closing_cash - $expected,
+            'difference'    => $difference,
             'status'        => 'tutup',
             'closed_at'     => now(),
         ]);
+
+        // ── Notifikasi ke Owner kalau selisih kas > Rp5.000 (UC-02 langkah 7) ──
+        if (abs($difference) > 5000) {
+            $owners = User::where('role', 'owner')->get();
+            if ($owners->isNotEmpty()) {
+                Notification::send($owners, new CashDifferenceNotification($shift->fresh(['user', 'branch'])));
+            }
+        }
 
         return redirect()->route('kasir.shift')->with('success', 'Shift berhasil ditutup.');
     }

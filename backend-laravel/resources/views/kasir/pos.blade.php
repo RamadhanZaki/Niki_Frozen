@@ -409,9 +409,15 @@
                 icon: 'success',
                 title: 'Transaksi tersimpan',
                 text: data.message,
-                timer: 2000,
-                showConfirmButton: false,
-            }).then(() => window.location.reload());
+                showCancelButton: true,
+                confirmButtonText: '🖨️ Cetak Struk',
+                cancelButtonText: 'Tutup',
+            }).then((result) => {
+                if (result.isConfirmed && data.receipt_url) {
+                    window.open(data.receipt_url, '_blank');
+                }
+                window.location.reload();
+            });
         } catch (err) {
             if (err instanceof NetworkUnreachableError) {
                 // Koneksi putus → simpan ke antrian lokal, jangan blokir kasir.

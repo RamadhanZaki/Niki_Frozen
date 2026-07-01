@@ -4,11 +4,17 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\AuthWebController;
 use App\Http\Controllers\Web\OwnerWebController;
 use App\Http\Controllers\Web\KasirWebController;
+use App\Http\Controllers\Web\NotificationWebController;
 
 // ─── Auth ───────────────────────────────────────────
 Route::get('/',        [AuthWebController::class, 'showLogin'])->name('login');
 Route::post('/login',  [AuthWebController::class, 'login']);
 Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
+
+// ─── Notifikasi (dipakai baik oleh Owner maupun Kasir) ──
+Route::middleware('auth')->group(function () {
+    Route::post('/notifications/read-all', [NotificationWebController::class, 'markAllRead'])->name('notifications.readAll');
+});
 
 // ─── Owner ──────────────────────────────────────────
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
@@ -45,6 +51,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
 Route::middleware(['auth', 'role:kasir'])->prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/pos',           [KasirWebController::class, 'pos'])->name('pos');
     Route::post('/pos/checkout', [KasirWebController::class, 'checkout'])->name('pos.checkout');
+    Route::get('/pos/receipt/{transaction}', [KasirWebController::class, 'receipt'])->name('pos.receipt');
 
     Route::get('/shift',         [KasirWebController::class, 'shift'])->name('shift');
     Route::post('/shift/open',   [KasirWebController::class, 'openShift'])->name('shift.open');

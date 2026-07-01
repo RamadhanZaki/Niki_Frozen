@@ -45,6 +45,10 @@
                                 onclick="showDetail({{ $t->id }})">
                                 <i class="bi bi-eye"></i>
                             </button>
+                            <a href="{{ route('kasir.pos.receipt', $t->id) }}" target="_blank"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-printer"></i>
+                            </a>
                         </td>
                     </tr>
                     @empty
