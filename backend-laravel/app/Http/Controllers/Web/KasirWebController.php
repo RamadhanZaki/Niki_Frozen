@@ -141,6 +141,15 @@ class KasirWebController extends Controller
             $shift->increment('total_sales', $total);
             $shift->increment('total_transactions');
 
+            // Pisahkan akumulasi cash vs QRIS supaya rekonsiliasi kas fisik
+            // saat tutup shift (closeShift) tidak ikut menghitung uang QRIS
+            // yang tidak pernah masuk ke laci kas.
+            if ($request->payment_method === 'qris') {
+                $shift->increment('total_qris_sales', $total);
+            } else {
+                $shift->increment('total_cash_sales', $total);
+            }
+
             // ── Ringkasan keuangan harian per cabang (financial_reports) ──
             // Upsert atomic pakai raw query: kalau baris (branch_id, date)
             // sudah ada, nilai baru DITAMBAHKAN (bukan ditimpa), sehingga aman
@@ -284,7 +293,10 @@ class KasirWebController extends Controller
             return back()->with('error', 'Tidak ada shift aktif untuk ditutup.');
         }
 
-        $expected = $shift->opening_cash + $shift->total_sales;
+        // Kas fisik yang diharapkan ada di laci HANYA dari transaksi cash.
+        // Uang QRIS masuk ke rekening/akun QRIS terpisah, bukan ke laci,
+        // jadi tidak boleh ikut dihitung di sini.
+        $expected = $shift->opening_cash + $shift->total_cash_sales;
         $difference = $request->closing_cash - $expected;
 
         $shift->update([

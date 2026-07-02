@@ -17,6 +17,7 @@
                         <th>No. Invoice</th>
                         <th>Tanggal</th>
                         <th>Total</th>
+                        <th>Metode</th>
                         <th>Bayar</th>
                         <th>Kembalian</th>
                         <th>Status</th>
@@ -29,6 +30,13 @@
                         <td class="fw-semibold small">{{ $t->invoice_number }}</td>
                         <td class="small text-muted">{{ \Carbon\Carbon::parse($t->created_at)->format('d/m/Y H:i') }}</td>
                         <td class="small fw-semibold">Rp {{ number_format($t->total, 0, ',', '.') }}</td>
+                        <td class="small">
+                            @if($t->payment_method === 'qris')
+                                <span class="badge bg-info text-dark"><i class="bi bi-qr-code me-1"></i>QRIS</span>
+                            @else
+                                <span class="badge bg-secondary"><i class="bi bi-cash-coin me-1"></i>Tunai</span>
+                            @endif
+                        </td>
                         <td class="small">Rp {{ number_format($t->payment, 0, ',', '.') }}</td>
                         <td class="small">Rp {{ number_format($t->change_amount, 0, ',', '.') }}</td>
                         <td>
@@ -41,8 +49,8 @@
                             @endif
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary"
-                                onclick="showDetail({{ $t->id }})">
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-detail"
+                                data-txn-id="{{ $t->id }}">
                                 <i class="bi bi-eye"></i>
                             </button>
                             <a href="{{ route('kasir.pos.receipt', $t->id) }}" target="_blank"
@@ -52,7 +60,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="7" class="text-center text-muted py-4">Belum ada transaksi</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted py-4">Belum ada transaksi</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -80,32 +88,47 @@
     </div>
 </div>
 
-{{-- Data detail per transaksi disiapkan di server (tanpa request tambahan) --}}
+{{-- Data detail per transaksi disiapkan di server (tanpa request tambahan).
+     Ditaruh di tag type="application/json" (BUKAN JavaScript) supaya VS Code
+     tidak mencoba mem-parsing isinya sebagai JS/TS. --}}
+<script type="application/json" id="transactionDetailsData">
+    @json(
+        $transactions->mapWithKeys(fn ($t) => [
+            $t->id => [
+                'invoice' => $t->invoice_number,
+                'tanggal' => \Carbon\Carbon::parse($t->created_at)->format('d/m/Y H:i'),
+                'total' => $t->total,
+                'paymentMethod' => $t->payment_method,
+                'payment' => $t->payment,
+                'change' => $t->change_amount,
+                'items' => $t->details->map(fn ($d) => [
+                    'name' => $d->product->name ?? 'Produk dihapus',
+                    'qty' => $d->qty,
+                    'price' => $d->price_at_sale,
+                    'subtotal' => $d->subtotal,
+                ]),
+            ],
+        ])
+    )
+</script>
+
+{{-- Script ini 100% JavaScript murni, tidak ada satu karakter Blade pun di
+     dalamnya — termasuk tombol detail, yang sekarang dipasangkan lewat
+     data-txn-id + event listener (bukan onclick="...{{ }}..." inline),
+     supaya linter JS di VS Code tidak lagi salah paham dan memunculkan
+     error palsu (root cause dari error "Property assignment expected" dkk
+     yang muncul sebelumnya). --}}
 <script>
-    const transactionDetails = {
-        @foreach($transactions as $t)
-            {{ $t->id }}: {
-                invoice: @json($t->invoice_number),
-                tanggal: @json(\Carbon\Carbon::parse($t->created_at)->format('d/m/Y H:i')),
-                total: {{ $t->total }},
-                payment: {{ $t->payment }},
-                change: {{ $t->change_amount }},
-                items: [
-                    @foreach($t->details as $d)
-                    {
-                        name: @json($d->product->name ?? 'Produk dihapus'),
-                        qty: {{ $d->qty }},
-                        price: {{ $d->price_at_sale }},
-                        subtotal: {{ $d->subtotal }}
-                    },
-                    @endforeach
-                ]
-            },
-        @endforeach
-    };
+    const transactionDetails = JSON.parse(
+        document.getElementById('transactionDetailsData').textContent
+    );
 
     function formatRp(n) {
         return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    function formatPaymentMethod(method) {
+        return method === 'qris' ? 'QRIS' : 'Tunai';
     }
 
     function showDetail(id) {
@@ -134,6 +157,7 @@
                 </table>
                 <hr>
                 <div class="d-flex justify-content-between"><span class="text-muted small">Total</span><span class="fw-bold">${formatRp(data.total)}</span></div>
+                <div class="d-flex justify-content-between"><span class="text-muted small">Metode Bayar</span><span class="small">${formatPaymentMethod(data.paymentMethod)}</span></div>
                 <div class="d-flex justify-content-between"><span class="text-muted small">Bayar</span><span class="small">${formatRp(data.payment)}</span></div>
                 <div class="d-flex justify-content-between"><span class="text-muted small">Kembalian</span><span class="small">${formatRp(data.change)}</span></div>
             `;
@@ -141,6 +165,12 @@
 
         new bootstrap.Modal(document.getElementById('detailModal')).show();
     }
+
+    document.querySelectorAll('.btn-detail').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            showDetail(Number(this.dataset.txnId));
+        });
+    });
 </script>
 
 @endsection

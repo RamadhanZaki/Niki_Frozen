@@ -14,6 +14,8 @@ class Shift extends Model
         'expected_cash',
         'difference',
         'total_sales',
+        'total_cash_sales',
+        'total_qris_sales',
         'total_transactions',
         'status',
         'opened_at',
@@ -28,6 +30,8 @@ class Shift extends Model
             'expected_cash'     => 'decimal:2',
             'difference'        => 'decimal:2',
             'total_sales'       => 'decimal:2',
+            'total_cash_sales'  => 'decimal:2',
+            'total_qris_sales'  => 'decimal:2',
             'opened_at'         => 'datetime',
             'closed_at'         => 'datetime',
         ];

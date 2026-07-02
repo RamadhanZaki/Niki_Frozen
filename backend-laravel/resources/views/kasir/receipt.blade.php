@@ -101,6 +101,10 @@
                 <span>Rp {{ number_format($transaction->total, 0, ',', '.') }}</span>
             </div>
             <div class="row">
+                <span>Metode Bayar</span>
+                <span>{{ $transaction->payment_method === 'qris' ? 'QRIS' : 'Tunai' }}</span>
+            </div>
+            <div class="row">
                 <span>Bayar</span>
                 <span>Rp {{ number_format($transaction->payment, 0, ',', '.') }}</span>
             </div>

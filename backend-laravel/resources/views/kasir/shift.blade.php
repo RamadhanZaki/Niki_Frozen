@@ -24,6 +24,14 @@
                         <span class="text-muted small">Total Penjualan</span>
                         <span class="fw-semibold text-success">Rp {{ number_format($shift->total_sales, 0, ',', '.') }}</span>
                     </div>
+                    <div class="mb-2 d-flex justify-content-between ps-3">
+                        <span class="text-muted small"><i class="bi bi-cash-coin me-1"></i>— Tunai</span>
+                        <span class="small">Rp {{ number_format($shift->total_cash_sales, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="mb-2 d-flex justify-content-between ps-3">
+                        <span class="text-muted small"><i class="bi bi-qr-code me-1"></i>— QRIS</span>
+                        <span class="small">Rp {{ number_format($shift->total_qris_sales, 0, ',', '.') }}</span>
+                    </div>
                     <div class="mb-3 d-flex justify-content-between">
                         <span class="text-muted small">Jumlah Transaksi</span>
                         <span class="fw-semibold">{{ $shift->total_transactions }}</span>
@@ -31,10 +39,15 @@
 
                     <hr>
 
-                    <div class="mb-3 d-flex justify-content-between">
+                    <div class="mb-1 d-flex justify-content-between">
                         <span class="text-muted small">Estimasi Kas Saat Ini</span>
                         <span class="fw-bold fs-5 text-primary">
-                            Rp {{ number_format($shift->opening_cash + $shift->total_sales, 0, ',', '.') }}
+                            Rp {{ number_format($shift->opening_cash + $shift->total_cash_sales, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted" style="font-size:.7rem;">
+                            Hanya dari pembayaran tunai — QRIS tidak masuk laci kas fisik.
                         </span>
                     </div>
 
@@ -98,7 +111,13 @@
                                     </span>
                                 </td>
                                 <td class="small">Rp {{ number_format($r->opening_cash, 0, ',', '.') }}</td>
-                                <td class="small text-success">Rp {{ number_format($r->total_sales, 0, ',', '.') }}</td>
+                                <td class="small text-success">
+                                    Rp {{ number_format($r->total_sales, 0, ',', '.') }}
+                                    <br>
+                                    <span class="text-muted" style="font-size:.65rem;">
+                                        Tunai Rp {{ number_format($r->total_cash_sales, 0, ',', '.') }} · QRIS Rp {{ number_format($r->total_qris_sales, 0, ',', '.') }}
+                                    </span>
+                                </td>
                                 <td class="small">Rp {{ number_format($r->closing_cash, 0, ',', '.') }}</td>
                                 <td>
                                     @php $diff = $r->difference ?? 0; @endphp
@@ -131,7 +150,11 @@
                 @csrf
                 <div class="modal-body">
                     <div class="alert alert-info small">
-                        Estimasi kas seharusnya: <strong>Rp {{ number_format($shift->opening_cash + $shift->total_sales, 0, ',', '.') }}</strong>
+                        Estimasi kas seharusnya (tunai saja): <strong>Rp {{ number_format($shift->opening_cash + $shift->total_cash_sales, 0, ',', '.') }}</strong>
+                        <br>
+                        <span style="font-size:.75rem;">
+                            Penjualan QRIS (Rp {{ number_format($shift->total_qris_sales, 0, ',', '.') }}) tidak dihitung karena tidak masuk laci kas fisik.
+                        </span>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Kas Akhir (Hasil Hitung Fisik)</label>
