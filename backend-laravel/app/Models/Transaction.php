@@ -14,6 +14,7 @@ class Transaction extends Model
         'shift_id',
         'total',
         'payment',
+        'payment_method',
         'change_amount',
         'status',
         'sync_status',

@@ -45,6 +45,7 @@ class KasirWebController extends Controller
             'items.*.id'        => 'required|exists:products,id',
             'items.*.qty'       => 'required|integer|min:1',
             'payment'           => 'required|numeric|min:0',
+            'payment_method'    => 'required|in:cash,qris',
             // Dikirim oleh JS kasir (dibuat di browser). Dipakai untuk mencegah
             // transaksi tersimpan dobel kalau request sync offline dikirim ulang.
             'client_txn_id'     => 'nullable|string|max:64',
@@ -113,6 +114,7 @@ class KasirWebController extends Controller
                 'shift_id'       => $shift->id,
                 'total'          => $total,
                 'payment'        => $request->payment,
+                'payment_method' => $request->payment_method,
                 'change_amount'  => $request->payment - $total,
                 'status'         => 'sukses',
                 // Kalau request ini datang lewat sync offline (ada client_txn_id

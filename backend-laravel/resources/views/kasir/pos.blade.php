@@ -87,6 +87,17 @@
                 </div>
 
                 <div class="mb-2">
+                    <label class="form-label small fw-semibold mb-1">Metode Pembayaran</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="paymentMethod" id="pmCash" value="cash" checked onchange="selectPaymentMethod('cash')">
+                        <label class="btn btn-outline-primary" for="pmCash"><i class="bi bi-cash-coin me-1"></i>Tunai</label>
+
+                        <input type="radio" class="btn-check" name="paymentMethod" id="pmQris" value="qris" onchange="selectPaymentMethod('qris')">
+                        <label class="btn btn-outline-primary" for="pmQris"><i class="bi bi-qr-code me-1"></i>QRIS</label>
+                    </div>
+                </div>
+
+                <div class="mb-2">
                     <label class="form-label small fw-semibold mb-1">Bayar</label>
                     <div class="input-group">
                         <span class="input-group-text">Rp</span>
@@ -112,6 +123,22 @@
 @push('scripts')
 <script>
     let cart = []; // [{id, name, price, stock, qty}]
+    let paymentMethod = 'cash'; // 'cash' | 'qris'
+
+    function selectPaymentMethod(method) {
+        paymentMethod = method;
+        const input = document.getElementById('paymentInput');
+
+        if (method === 'qris') {
+            // QRIS selalu dibayar pas sejumlah total, tidak ada kembalian tunai.
+            const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+            input.value = total > 0 ? total.toLocaleString('id-ID') : '';
+            input.disabled = true;
+        } else {
+            input.disabled = false;
+        }
+        updateTotals();
+    }
 
     function formatRp(n) {
         return 'Rp ' + Number(n).toLocaleString('id-ID');
@@ -223,6 +250,10 @@
     function updateTotals() {
         const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
         document.getElementById('cartTotal').textContent = formatRp(total);
+
+        if (paymentMethod === 'qris') {
+            document.getElementById('paymentInput').value = total > 0 ? total.toLocaleString('id-ID') : '';
+        }
 
         const payment = getPaymentValue();
         const change  = payment - total;
@@ -398,6 +429,7 @@
             client_txn_id: makeClientTxnId(),
             items: cart.map(i => ({ id: i.id, qty: i.qty })),
             payment: payment,
+            payment_method: paymentMethod,
         };
 
         const btn = document.getElementById('btnCheckout');
@@ -416,7 +448,7 @@
                 if (result.isConfirmed && data.receipt_url) {
                     window.open(data.receipt_url, '_blank');
                 }
-                window.location.reload();
+                window.location.reload(); // reload otomatis reset toggle ke Tunai (default HTML)
             });
         } catch (err) {
             if (err instanceof NetworkUnreachableError) {
@@ -426,6 +458,9 @@
                 cart = [];
                 renderCart();
                 document.getElementById('paymentInput').value = '';
+                document.getElementById('paymentInput').disabled = false;
+                document.getElementById('pmCash').checked = true;
+                paymentMethod = 'cash';
                 Swal.fire({
                     icon: 'warning',
                     title: 'Tersimpan offline',
