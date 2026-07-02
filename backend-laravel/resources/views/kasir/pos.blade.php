@@ -38,7 +38,8 @@
 
                         <button type="button" class="btn btn-sm btn-dark w-100"
                             {{ $qty <= 0 ? 'disabled' : '' }}
-                            onclick='addToCart({{ json_encode(["id" => $p->id, "name" => $p->name, "price" => (float)$p->price, "stock" => $qty]) }})'>
+                            data-product='{{ json_encode(["id" => $p->id, "name" => $p->name, "price" => (float)$p->price, "stock" => $qty], JSON_HEX_APOS | JSON_HEX_QUOT) }}'
+                            onclick="addToCart(JSON.parse(this.dataset.product))">
                             <i class="bi bi-plus-lg"></i> Tambah
                         </button>
                     </div>
