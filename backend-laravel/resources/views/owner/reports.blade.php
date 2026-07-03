@@ -49,6 +49,20 @@
             <div class="stat-label">Rata-rata per Transaksi</div>
         </div>
     </div>
+    <div class="col-6 col-xl-4">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#eafaf1;color:#2dc653;"><i class="bi bi-cash-coin"></i></div>
+            <div class="stat-value">Rp {{ number_format($summary['total_cash'], 0, ',', '.') }}</div>
+            <div class="stat-label">Penjualan Tunai</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-4">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#e8f4fd;color:#0F4C81;"><i class="bi bi-qr-code"></i></div>
+            <div class="stat-value">Rp {{ number_format($summary['total_qris'], 0, ',', '.') }}</div>
+            <div class="stat-label">Penjualan QRIS</div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-3">
@@ -65,6 +79,8 @@
                             <tr>
                                 <th>Tanggal</th>
                                 <th>Jumlah Transaksi</th>
+                                <th class="text-end">Tunai</th>
+                                <th class="text-end">QRIS</th>
                                 <th class="text-end">Total</th>
                             </tr>
                         </thead>
@@ -73,10 +89,12 @@
                             <tr>
                                 <td class="small">{{ \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') }}</td>
                                 <td class="small">{{ $row->jumlah }}</td>
+                                <td class="small text-end">Rp {{ number_format($row->cash, 0, ',', '.') }}</td>
+                                <td class="small text-end">Rp {{ number_format($row->qris, 0, ',', '.') }}</td>
                                 <td class="small text-end fw-semibold">Rp {{ number_format($row->total, 0, ',', '.') }}</td>
                             </tr>
                             @empty
-                            <tr><td colspan="3" class="text-center text-muted py-4">Tidak ada data pada rentang ini</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada data pada rentang ini</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -131,6 +149,8 @@
                     <tr>
                         <th>Cabang</th>
                         <th>Jumlah Transaksi</th>
+                        <th class="text-end">Tunai</th>
+                        <th class="text-end">QRIS</th>
                         <th class="text-end">Total Penjualan</th>
                     </tr>
                 </thead>
@@ -139,10 +159,12 @@
                     <tr>
                         <td class="small fw-semibold">{{ $row->branch?->name ?? '-' }}</td>
                         <td class="small">{{ $row->jumlah }}</td>
+                        <td class="small text-end">Rp {{ number_format($row->cash, 0, ',', '.') }}</td>
+                        <td class="small text-end">Rp {{ number_format($row->qris, 0, ',', '.') }}</td>
                         <td class="small text-end fw-semibold">Rp {{ number_format($row->total, 0, ',', '.') }}</td>
                     </tr>
                     @empty
-                    <tr><td colspan="3" class="text-center text-muted py-4">Tidak ada data</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada data</td></tr>
                     @endforelse
                 </tbody>
             </table>

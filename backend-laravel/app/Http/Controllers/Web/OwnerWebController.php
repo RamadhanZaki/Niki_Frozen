@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -281,7 +282,7 @@ class OwnerWebController extends Controller
         StockMutation::create([
             'product_id'   => $product->id,
             'branch_id'    => $stock->branch_id,
-            'user_id'      => auth()->id(),
+            'user_id'      => Auth::id(),
             'type'         => $request->type === 'add' ? 'in' : 'out',
             'quantity'     => $request->quantity,
             'before_stock' => $before,
@@ -304,11 +305,32 @@ class OwnerWebController extends Controller
             'rata_rata'         => Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])->avg('total') ?? 0,
         ];
 
-        $penjualan_harian = Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
-            ->selectRaw('DATE(created_at) as tanggal, SUM(total) as total, COUNT(*) as jumlah')
-            ->groupBy('tanggal')
+        // ── Breakdown metode pembayaran (Tunai vs QRIS) ──
+        $per_metode = Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
+            ->selectRaw('payment_method, SUM(total) as total, COUNT(*) as jumlah')
+            ->groupBy('payment_method')
+            ->get()
+            ->keyBy('payment_method');
+
+        $summary['total_cash'] = $per_metode->get('cash')->total ?? 0;
+        $summary['total_qris'] = $per_metode->get('qris')->total ?? 0;
+
+        $penjualan_harian_raw = Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
+            ->selectRaw('DATE(created_at) as tanggal, payment_method, SUM(total) as total, COUNT(*) as jumlah')
+            ->groupBy('tanggal', 'payment_method')
             ->orderBy('tanggal')
             ->get();
+
+        // Pivot per tanggal: satu baris per hari, dengan kolom cash & qris terpisah
+        $penjualan_harian = $penjualan_harian_raw->groupBy('tanggal')->map(function ($items, $tanggal) {
+            return (object) [
+                'tanggal' => $tanggal,
+                'jumlah'  => $items->sum('jumlah'),
+                'total'   => $items->sum('total'),
+                'cash'    => optional($items->firstWhere('payment_method', 'cash'))->total ?? 0,
+                'qris'    => optional($items->firstWhere('payment_method', 'qris'))->total ?? 0,
+            ];
+        })->values();
 
         $produk_terlaris = TransactionDetail::with('product')
             ->whereHas('transaction', function ($q) use ($start, $end) {
@@ -320,11 +342,22 @@ class OwnerWebController extends Controller
             ->limit(5)
             ->get();
 
-        $penjualan_per_cabang = Transaction::with('branch')
+        $penjualan_per_cabang_raw = Transaction::with('branch')
             ->whereBetween('created_at', [$start, $end . ' 23:59:59'])
-            ->selectRaw('branch_id, SUM(total) as total, COUNT(*) as jumlah')
-            ->groupBy('branch_id')
+            ->selectRaw('branch_id, payment_method, SUM(total) as total, COUNT(*) as jumlah')
+            ->groupBy('branch_id', 'payment_method')
             ->get();
+
+        // Pivot per cabang: satu baris per cabang, dengan kolom cash & qris terpisah
+        $penjualan_per_cabang = $penjualan_per_cabang_raw->groupBy('branch_id')->map(function ($items) {
+            return (object) [
+                'branch'  => $items->first()->branch,
+                'jumlah'  => $items->sum('jumlah'),
+                'total'   => $items->sum('total'),
+                'cash'    => optional($items->firstWhere('payment_method', 'cash'))->total ?? 0,
+                'qris'    => optional($items->firstWhere('payment_method', 'qris'))->total ?? 0,
+            ];
+        })->values();
 
         return view('owner.reports', compact(
             'summary', 'penjualan_harian', 'produk_terlaris', 'penjualan_per_cabang', 'start', 'end'

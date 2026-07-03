@@ -20,7 +20,9 @@
                         <th>Dibuka</th>
                         <th>Ditutup</th>
                         <th>Modal Awal</th>
-                        <th>Penjualan</th>
+                        <th>Tunai</th>
+                        <th>QRIS</th>
+                        <th>Total Penjualan</th>
                         <th>Transaksi</th>
                         <th>Selisih</th>
                         <th>Status</th>
@@ -37,7 +39,9 @@
                             {{ $s->closed_at ? \Carbon\Carbon::parse($s->closed_at)->format('d/m/Y H:i') : '-' }}
                         </td>
                         <td class="small">Rp {{ number_format($s->opening_cash, 0, ',', '.') }}</td>
-                        <td class="small text-success">Rp {{ number_format($s->total_sales, 0, ',', '.') }}</td>
+                        <td class="small">Rp {{ number_format($s->total_cash_sales, 0, ',', '.') }}</td>
+                        <td class="small">Rp {{ number_format($s->total_qris_sales, 0, ',', '.') }}</td>
+                        <td class="small text-success fw-semibold">Rp {{ number_format($s->total_sales, 0, ',', '.') }}</td>
                         <td class="small">{{ $s->total_transactions }}</td>
                         <td class="small">
                             @if(is_null($s->difference))
@@ -57,7 +61,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="10" class="text-center text-muted py-4">Belum ada data shift</td></tr>
+                    <tr><td colspan="12" class="text-center text-muted py-4">Belum ada data shift</td></tr>
                     @endforelse
                 </tbody>
             </table>
