@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InvoiceCounter;
 use App\Models\Product;
 use App\Models\Shift;
+use App\Models\Stock;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
@@ -73,102 +74,133 @@ class KasirWebController extends Controller
                 : back()->with('error', $message);
         }
 
-        // Hitung total & validasi stok dulu sebelum simpan apa pun
-        $total = 0;
-        $cartData = [];
+        // ── Cek stok & proses checkout dalam satu DB transaction ──────────
+        // Semua pengecekan (stok cukup, pembayaran cukup) dilakukan DI DALAM
+        // transaction ini, setelah baris stok dikunci (lockForUpdate). Ini
+        // mencegah race condition: kalau 2 checkout produk yang sama datang
+        // nyaris bersamaan, checkout kedua akan menunggu checkout pertama
+        // commit dulu sebelum bisa baca quantity stok yang sudah ter-update,
+        // bukan baca data basi yang membuat keduanya lolos validasi.
+        $transaction = null;
 
-        foreach ($request->items as $item) {
-            $product = Product::with('stock')->findOrFail($item['id']);
-            $stock   = $product->stock;
+        try {
+            $transaction = DB::transaction(function () use ($request, $shift) {
+                // ── Kunci baris stok yang terlibat, urut berdasarkan product_id ──
+                // Urutan yang konsisten (ascending) mencegah deadlock kalau ada dua
+                // checkout paralel yang sama-sama butuh produk A & B tapi beda urutan
+                // input. Stok DIKUNCI DI DALAM transaction ini (lockForUpdate), jadi
+                // checkout lain yang butuh produk yang sama harus menunggu transaction
+                // ini commit dulu sebelum bisa baca quantity terbaru — mencegah dua
+                // checkout paralel sama-sama lolos validasi "stok cukup" dari data basi
+                // lalu sama-sama mengurangi stok sampai minus.
+                $productIds = collect($request->items)->pluck('id')->unique()->sort()->values();
 
-            if (!$stock || $stock->quantity < $item['qty']) {
-                $message = "Stok {$product->name} tidak cukup.";
-                return $wantsJson
-                    ? response()->json(['success' => false, 'message' => $message], 422)
-                    : back()->with('error', $message);
-            }
+                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
-            $subtotal = $product->price * $item['qty'];
-            $total   += $subtotal;
+                $stocks = Stock::whereIn('product_id', $productIds)
+                    ->orderBy('product_id')
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('product_id');
 
-            $cartData[] = [
-                'product'  => $product,
-                'qty'      => $item['qty'],
-                'subtotal' => $subtotal,
-            ];
-        }
+                $total = 0;
+                $cartData = [];
 
-        if ($request->payment < $total) {
-            $message = 'Jumlah pembayaran kurang dari total belanja.';
-            return $wantsJson
-                ? response()->json(['success' => false, 'message' => $message], 422)
-                : back()->with('error', $message);
-        }
+                foreach ($request->items as $item) {
+                    $product = $products->get($item['id']);
+                    $stock   = $stocks->get($item['id']);
 
-        $transaction = DB::transaction(function () use ($cartData, $total, $request, $shift) {
-            $transaction = Transaction::create([
-                'invoice_number' => $this->generateInvoiceNumber(),
-                'client_txn_id'  => $request->client_txn_id,
-                'user_id'        => Auth::id(),
-                'branch_id'      => session('branch_id'),
-                'shift_id'       => $shift->id,
-                'total'          => $total,
-                'payment'        => $request->payment,
-                'payment_method' => $request->payment_method,
-                'change_amount'  => $request->payment - $total,
-                'status'         => 'sukses',
-                // Kalau request ini datang lewat sync offline (ada client_txn_id
-                // dan dikirim setelah delay), tetap ditandai tersinkronisasi karena
-                // pada titik ini transaksi sudah berhasil sampai ke server.
-                'sync_status'    => 'tersinkronisasi',
-                'synced_at'      => now(),
-            ]);
+                    if (!$stock || $stock->quantity < $item['qty']) {
+                        $nama = $product->name ?? 'produk';
+                        throw new \RuntimeException("Stok {$nama} tidak cukup.");
+                    }
 
-            foreach ($cartData as $row) {
-                TransactionDetail::create([
-                    'transaction_id' => $transaction->id,
-                    'product_id'     => $row['product']->id,
-                    'qty'            => $row['qty'],
-                    'price_at_sale'  => $row['product']->price,
-                    'subtotal'       => $row['subtotal'],
+                    $subtotal = $product->price * $item['qty'];
+                    $total   += $subtotal;
+
+                    $cartData[] = [
+                        'product'  => $product,
+                        'stock'    => $stock,
+                        'qty'      => $item['qty'],
+                        'subtotal' => $subtotal,
+                    ];
+                }
+
+                if ($request->payment < $total) {
+                    throw new \RuntimeException('Jumlah pembayaran kurang dari total belanja.');
+                }
+
+                $transaction = Transaction::create([
+                    'invoice_number' => $this->generateInvoiceNumber(),
+                    'client_txn_id'  => $request->client_txn_id,
+                    'user_id'        => Auth::id(),
+                    'branch_id'      => session('branch_id'),
+                    'shift_id'       => $shift->id,
+                    'total'          => $total,
+                    'payment'        => $request->payment,
+                    'payment_method' => $request->payment_method,
+                    'change_amount'  => $request->payment - $total,
+                    'status'         => 'sukses',
+                    // Kalau request ini datang lewat sync offline (ada client_txn_id
+                    // dan dikirim setelah delay), tetap ditandai tersinkronisasi karena
+                    // pada titik ini transaksi sudah berhasil sampai ke server.
+                    'sync_status'    => 'tersinkronisasi',
+                    'synced_at'      => now(),
                 ]);
 
-                // Kurangi stok
-                $row['product']->stock->decrement('quantity', $row['qty']);
-            }
+                foreach ($cartData as $row) {
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'product_id'     => $row['product']->id,
+                        'qty'            => $row['qty'],
+                        'price_at_sale'  => $row['product']->price,
+                        'subtotal'       => $row['subtotal'],
+                    ]);
 
-            // Update akumulasi shift
-            $shift->increment('total_sales', $total);
-            $shift->increment('total_transactions');
+                    // Kurangi stok yang sudah dikunci di atas
+                    $row['stock']->decrement('quantity', $row['qty']);
+                }
 
-            // Pisahkan akumulasi cash vs QRIS supaya rekonsiliasi kas fisik
-            // saat tutup shift (closeShift) tidak ikut menghitung uang QRIS
-            // yang tidak pernah masuk ke laci kas.
-            if ($request->payment_method === 'qris') {
-                $shift->increment('total_qris_sales', $total);
-            } else {
-                $shift->increment('total_cash_sales', $total);
-            }
+                // Update akumulasi shift
+                $shift->increment('total_sales', $total);
+                $shift->increment('total_transactions');
 
-            // ── Ringkasan keuangan harian per cabang (financial_reports) ──
-            // Upsert atomic pakai raw query: kalau baris (branch_id, date)
-            // sudah ada, nilai baru DITAMBAHKAN (bukan ditimpa), sehingga aman
-            // dipanggil dari banyak transaksi paralel tanpa race condition —
-            // sama seperti pendekatan invoice_counters di generateInvoiceNumber().
-            DB::statement(
-                'INSERT INTO financial_reports
-                    (branch_id, date, total_revenue, total_expense, net_profit, total_transactions, created_at, updated_at)
-                 VALUES (?, ?, ?, 0, ?, 1, NOW(), NOW())
-                 ON DUPLICATE KEY UPDATE
-                    total_revenue = total_revenue + VALUES(total_revenue),
-                    net_profit = net_profit + VALUES(net_profit),
-                    total_transactions = total_transactions + 1,
-                    updated_at = NOW()',
-                [$shift->branch_id, now()->toDateString(), $total, $total]
-            );
+                // Pisahkan akumulasi cash vs QRIS supaya rekonsiliasi kas fisik
+                // saat tutup shift (closeShift) tidak ikut menghitung uang QRIS
+                // yang tidak pernah masuk ke laci kas.
+                if ($request->payment_method === 'qris') {
+                    $shift->increment('total_qris_sales', $total);
+                } else {
+                    $shift->increment('total_cash_sales', $total);
+                }
 
-            return $transaction;
-        });
+                // ── Ringkasan keuangan harian per cabang (financial_reports) ──
+                // Upsert atomic pakai raw query: kalau baris (branch_id, date)
+                // sudah ada, nilai baru DITAMBAHKAN (bukan ditimpa), sehingga aman
+                // dipanggil dari banyak transaksi paralel tanpa race condition —
+                // sama seperti pendekatan invoice_counters di generateInvoiceNumber().
+                DB::statement(
+                    'INSERT INTO financial_reports
+                        (branch_id, date, total_revenue, total_expense, net_profit, total_transactions, created_at, updated_at)
+                     VALUES (?, ?, ?, 0, ?, 1, NOW(), NOW())
+                     ON DUPLICATE KEY UPDATE
+                        total_revenue = total_revenue + VALUES(total_revenue),
+                        net_profit = net_profit + VALUES(net_profit),
+                        total_transactions = total_transactions + 1,
+                        updated_at = NOW()',
+                    [$shift->branch_id, now()->toDateString(), $total, $total]
+                );
+
+                return $transaction;
+            });
+        } catch (\RuntimeException $e) {
+            // Kegagalan validasi terkendali (stok kurang / bayar kurang) yang
+            // dilempar dari dalam transaction di atas — transaction otomatis
+            // di-rollback oleh Laravel begitu exception ini terlempar.
+            return $wantsJson
+                ? response()->json(['success' => false, 'message' => $e->getMessage()], 422)
+                : back()->with('error', $e->getMessage());
+        }
 
         return $this->checkoutResponse($wantsJson, $transaction, duplicate: false);
     }
