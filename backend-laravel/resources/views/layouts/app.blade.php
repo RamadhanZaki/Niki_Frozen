@@ -375,6 +375,10 @@
                class="nav-link {{ request()->routeIs('owner.shifts') ? 'active' : '' }}">
                 <i class="bi bi-clock-history"></i> Shift
             </a>
+            <a href="{{ route('owner.notifications.history') }}"
+               class="nav-link {{ request()->routeIs('owner.notifications.history') ? 'active' : '' }}">
+                <i class="bi bi-bell"></i> Riwayat Notifikasi
+            </a>
 
             <div class="nav-label">Laporan & Sistem</div>
             <a href="{{ route('owner.reports') }}"
@@ -474,6 +478,11 @@
             @empty
                 <div class="px-3 py-4 text-center text-muted small">Tidak ada notifikasi baru</div>
             @endforelse
+            <div class="text-center border-top py-2">
+                <a href="{{ route('owner.notifications.history') }}" class="small text-decoration-none">
+                    Lihat semua notifikasi
+                </a>
+            </div>
         </div>
     </div>
 </header>
