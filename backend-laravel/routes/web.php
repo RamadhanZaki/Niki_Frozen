@@ -37,6 +37,10 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
 
     Route::get('/shifts',              [OwnerWebController::class, 'shifts'])->name('shifts');
 
+    Route::get('/notifications',                [NotificationWebController::class, 'history'])->name('notifications.history');
+    Route::post('/notifications/{notification}/read', [NotificationWebController::class, 'markRead'])->name('notifications.read');
+    Route::delete('/notifications/{notification}',    [NotificationWebController::class, 'destroy'])->name('notifications.destroy');
+
     Route::get('/settings',            [OwnerWebController::class, 'settings'])->name('settings');
     Route::post('/settings',           [OwnerWebController::class, 'updateSettings'])->name('settings.update');
 
