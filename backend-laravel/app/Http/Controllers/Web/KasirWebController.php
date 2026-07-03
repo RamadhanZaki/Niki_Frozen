@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
 use App\Notifications\CashDifferenceNotification;
+use App\Notifications\QrisPaymentNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -200,6 +201,19 @@ class KasirWebController extends Controller
             return $wantsJson
                 ? response()->json(['success' => false, 'message' => $e->getMessage()], 422)
                 : back()->with('error', $e->getMessage());
+        }
+
+        // ── Notifikasi ke Owner untuk setiap pembayaran QRIS ──
+        // Owner ingin tahu real-time setiap ada transaksi QRIS masuk: dari
+        // kasir mana, cabang mana, dan berapa nominalnya. Dikirim setelah
+        // DB transaction commit (bukan di dalamnya) supaya kegagalan kirim
+        // notifikasi tidak pernah membatalkan transaksi penjualan yang
+        // sudah sukses tersimpan.
+        if ($request->payment_method === 'qris') {
+            $owners = User::where('role', 'owner')->get();
+            if ($owners->isNotEmpty()) {
+                Notification::send($owners, new QrisPaymentNotification($transaction->fresh(['user', 'branch'])));
+            }
         }
 
         return $this->checkoutResponse($wantsJson, $transaction, duplicate: false);
