@@ -106,6 +106,12 @@
                 <span>Rp {{ number_format($transaction->tax_amount, 0, ',', '.') }}</span>
             </div>
             @endif
+            @if((float) $transaction->rounding_amount != 0)
+            <div class="row">
+                <span>Pembulatan</span>
+                <span>{{ (float) $transaction->rounding_amount > 0 ? '+' : '-' }} Rp {{ number_format(abs($transaction->rounding_amount), 0, ',', '.') }}</span>
+            </div>
+            @endif
             <div class="row grand-total">
                 <span>TOTAL</span>
                 <span>Rp {{ number_format($transaction->total, 0, ',', '.') }}</span>

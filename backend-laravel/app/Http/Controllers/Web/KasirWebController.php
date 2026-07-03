@@ -138,31 +138,45 @@ class KasirWebController extends Controller
                 // 'total' (dan seluruh akumulasi omzet turunan lain di bawah)
                 // sengaja dihitung SETELAH pajak, karena itulah nominal yang
                 // benar-benar diterima kasir dari customer.
-                $taxAmount  = round($total * $taxPercent / 100);
-                $grandTotal = $total + $taxAmount;
+                $taxAmount    = round($total * $taxPercent / 100);
+                $preRoundTotal = $total + $taxAmount;
+
+                // ── Pembulatan kembalian (khusus Tunai) ──
+                // Pajak sering menghasilkan angka receh (mis. Rp250/Rp750) yang
+                // tidak punya pecahan uang fisik, menyulitkan kasir menghitung
+                // kembalian. Untuk Tunai, total akhir dibulatkan ke kelipatan
+                // Rp500 terdekat. QRIS tidak dibulatkan karena nominal digital
+                // bisa dibayar presisi berapa pun tanpa masalah kembalian.
+                if ($request->payment_method === 'cash') {
+                    $grandTotal = (float) (round($preRoundTotal / 500) * 500);
+                } else {
+                    $grandTotal = $preRoundTotal;
+                }
+                $roundingAmount = $grandTotal - $preRoundTotal;
 
                 if ($request->payment < $grandTotal) {
                     throw new \RuntimeException('Jumlah pembayaran kurang dari total belanja.');
                 }
 
                 $transaction = Transaction::create([
-                    'invoice_number' => $this->generateInvoiceNumber(),
-                    'client_txn_id'  => $request->client_txn_id,
-                    'user_id'        => Auth::id(),
-                    'branch_id'      => session('branch_id'),
-                    'shift_id'       => $shift->id,
-                    'subtotal'       => $total,
-                    'tax_amount'     => $taxAmount,
-                    'total'          => $grandTotal,
-                    'payment'        => $request->payment,
-                    'payment_method' => $request->payment_method,
-                    'change_amount'  => $request->payment - $grandTotal,
-                    'status'         => 'sukses',
+                    'invoice_number'   => $this->generateInvoiceNumber(),
+                    'client_txn_id'    => $request->client_txn_id,
+                    'user_id'          => Auth::id(),
+                    'branch_id'        => session('branch_id'),
+                    'shift_id'         => $shift->id,
+                    'subtotal'         => $total,
+                    'tax_amount'       => $taxAmount,
+                    'rounding_amount'  => $roundingAmount,
+                    'total'            => $grandTotal,
+                    'payment'          => $request->payment,
+                    'payment_method'   => $request->payment_method,
+                    'change_amount'    => $request->payment - $grandTotal,
+                    'status'           => 'sukses',
                     // Kalau request ini datang lewat sync offline (ada client_txn_id
                     // dan dikirim setelah delay), tetap ditandai tersinkronisasi karena
                     // pada titik ini transaksi sudah berhasil sampai ke server.
-                    'sync_status'    => 'tersinkronisasi',
-                    'synced_at'      => now(),
+                    'sync_status'      => 'tersinkronisasi',
+                    'synced_at'        => now(),
                 ]);
 
                 foreach ($cartData as $row) {

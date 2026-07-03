@@ -92,6 +92,10 @@
                     <span class="small" id="cartTax">Rp 0</span>
                 </div>
                 @endif
+                <div class="d-flex justify-content-between mb-1" id="cartRoundingRow" style="display:none;">
+                    <span class="text-muted small">Pembulatan (Tunai)</span>
+                    <span class="small" id="cartRounding">Rp 0</span>
+                </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Total Bayar</span>
                     <span class="fw-bold fs-5" id="cartTotal">Rp 0</span>
@@ -140,10 +144,18 @@
     // Hitung subtotal (pra-pajak), nominal pajak, dan total akhir yang harus
     // dibayar. Perhitungan final tetap dilakukan ulang di server (checkout()),
     // ini hanya untuk tampilan & validasi awal di sisi kasir.
+    //
+    // Untuk Tunai, total dibulatkan ke kelipatan Rp500 terdekat (sama seperti
+    // di server) supaya kasir tidak perlu menghitung kembalian recehan hasil
+    // pajak (mis. Rp250/Rp750) yang tidak punya pecahan uang fisik. QRIS tetap
+    // presisi karena nominal digital tidak masalah dibayar berapa pun.
     function calcTotals() {
         const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
         const tax      = Math.round(subtotal * TAX_PERCENT / 100);
-        return { subtotal, tax, grandTotal: subtotal + tax };
+        const preRound = subtotal + tax;
+        const grandTotal = paymentMethod === 'cash' ? Math.round(preRound / 500) * 500 : preRound;
+        const rounding = grandTotal - preRound;
+        return { subtotal, tax, rounding, grandTotal };
     }
 
     function selectPaymentMethod(method) {
@@ -270,12 +282,23 @@
     }
 
     function updateTotals() {
-        const { subtotal, tax, grandTotal } = calcTotals();
+        const { subtotal, tax, rounding, grandTotal } = calcTotals();
 
         document.getElementById('cartSubtotal').textContent = formatRp(subtotal);
         const taxEl = document.getElementById('cartTax');
         if (taxEl) taxEl.textContent = formatRp(tax);
         document.getElementById('cartTotal').textContent = formatRp(grandTotal);
+
+        // Baris "Pembulatan" hanya muncul kalau ada selisih pembulatan (Tunai +
+        // hasilnya bukan kelipatan Rp500 pas sebelum dibulatkan).
+        const roundingRow = document.getElementById('cartRoundingRow');
+        const roundingEl  = document.getElementById('cartRounding');
+        if (rounding !== 0) {
+            roundingRow.style.display = 'flex';
+            roundingEl.textContent = (rounding > 0 ? '+ ' : '- ') + formatRp(Math.abs(rounding));
+        } else {
+            roundingRow.style.display = 'none';
+        }
 
         if (paymentMethod === 'qris') {
             document.getElementById('paymentInput').value = grandTotal > 0 ? grandTotal.toLocaleString('id-ID') : '';
