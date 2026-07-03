@@ -12,6 +12,8 @@ class Transaction extends Model
         'user_id',
         'branch_id',
         'shift_id',
+        'subtotal',
+        'tax_amount',
         'total',
         'payment',
         'payment_method',
@@ -24,6 +26,8 @@ class Transaction extends Model
     protected function casts(): array
     {
         return [
+            'subtotal'      => 'decimal:2',
+            'tax_amount'    => 'decimal:2',
             'total'         => 'decimal:2',
             'payment'       => 'decimal:2',
             'change_amount' => 'decimal:2',

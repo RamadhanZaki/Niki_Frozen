@@ -82,8 +82,18 @@
             </div>
 
             <div class="card-footer bg-white">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted small">Subtotal</span>
+                    <span class="small" id="cartSubtotal">Rp 0</span>
+                </div>
+                @if($taxPercent > 0)
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted small">Pajak ({{ rtrim(rtrim(number_format($taxPercent, 2, ',', '.'), '0'), ',') }}%)</span>
+                    <span class="small" id="cartTax">Rp 0</span>
+                </div>
+                @endif
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Total</span>
+                    <span class="text-muted">Total Bayar</span>
                     <span class="fw-bold fs-5" id="cartTotal">Rp 0</span>
                 </div>
 
@@ -125,15 +135,26 @@
 <script>
     let cart = []; // [{id, name, price, stock, qty}]
     let paymentMethod = 'cash'; // 'cash' | 'qris'
+    const TAX_PERCENT = {{ (float) $taxPercent }};
+
+    // Hitung subtotal (pra-pajak), nominal pajak, dan total akhir yang harus
+    // dibayar. Perhitungan final tetap dilakukan ulang di server (checkout()),
+    // ini hanya untuk tampilan & validasi awal di sisi kasir.
+    function calcTotals() {
+        const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+        const tax      = Math.round(subtotal * TAX_PERCENT / 100);
+        return { subtotal, tax, grandTotal: subtotal + tax };
+    }
 
     function selectPaymentMethod(method) {
         paymentMethod = method;
         const input = document.getElementById('paymentInput');
 
         if (method === 'qris') {
-            // QRIS selalu dibayar pas sejumlah total, tidak ada kembalian tunai.
-            const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-            input.value = total > 0 ? total.toLocaleString('id-ID') : '';
+            // QRIS selalu dibayar pas sejumlah total (termasuk pajak), tidak
+            // ada kembalian tunai.
+            const { grandTotal } = calcTotals();
+            input.value = grandTotal > 0 ? grandTotal.toLocaleString('id-ID') : '';
             input.disabled = true;
         } else {
             input.disabled = false;
@@ -249,15 +270,19 @@
     }
 
     function updateTotals() {
-        const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-        document.getElementById('cartTotal').textContent = formatRp(total);
+        const { subtotal, tax, grandTotal } = calcTotals();
+
+        document.getElementById('cartSubtotal').textContent = formatRp(subtotal);
+        const taxEl = document.getElementById('cartTax');
+        if (taxEl) taxEl.textContent = formatRp(tax);
+        document.getElementById('cartTotal').textContent = formatRp(grandTotal);
 
         if (paymentMethod === 'qris') {
-            document.getElementById('paymentInput').value = total > 0 ? total.toLocaleString('id-ID') : '';
+            document.getElementById('paymentInput').value = grandTotal > 0 ? grandTotal.toLocaleString('id-ID') : '';
         }
 
         const payment = getPaymentValue();
-        const change  = payment - total;
+        const change  = payment - grandTotal;
         document.getElementById('cartChange').textContent = formatRp(change > 0 ? change : 0);
     }
 
@@ -414,14 +439,14 @@
     });
 
     async function submitCheckout() {
-        const total   = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+        const { grandTotal } = calcTotals();
         const payment = getPaymentValue();
 
         if (cart.length === 0) {
             alert('Keranjang masih kosong.');
             return;
         }
-        if (payment < total) {
+        if (payment < grandTotal) {
             alert('Jumlah pembayaran kurang dari total belanja.');
             return;
         }

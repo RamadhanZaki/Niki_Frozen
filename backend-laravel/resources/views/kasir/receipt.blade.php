@@ -96,6 +96,16 @@
         <hr>
 
         <div class="totals">
+            @if((float) $transaction->tax_amount > 0)
+            <div class="row">
+                <span>Subtotal</span>
+                <span>Rp {{ number_format($transaction->subtotal, 0, ',', '.') }}</span>
+            </div>
+            <div class="row">
+                <span>Pajak</span>
+                <span>Rp {{ number_format($transaction->tax_amount, 0, ',', '.') }}</span>
+            </div>
+            @endif
             <div class="row grand-total">
                 <span>TOTAL</span>
                 <span>Rp {{ number_format($transaction->total, 0, ',', '.') }}</span>

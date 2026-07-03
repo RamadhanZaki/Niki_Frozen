@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\InvoiceCounter;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Shift;
 use App\Models\Stock;
 use App\Models\Transaction;
@@ -35,7 +36,9 @@ class KasirWebController extends Controller
             ->where('branch_id', session('branch_id'))
             ->get();
 
-        return view('kasir.pos', compact('products', 'shift'));
+        $taxPercent = (float) Setting::get('tax_percent', 0);
+
+        return view('kasir.pos', compact('products', 'shift', 'taxPercent'));
     }
 
     public function checkout(Request $request)
@@ -82,10 +85,14 @@ class KasirWebController extends Controller
         // nyaris bersamaan, checkout kedua akan menunggu checkout pertama
         // commit dulu sebelum bisa baca quantity stok yang sudah ter-update,
         // bukan baca data basi yang membuat keduanya lolos validasi.
+        // Diambil di luar DB::transaction karena cuma baca Settings (tidak perlu
+        // ikut dikunci bersama baris stok).
+        $taxPercent = (float) Setting::get('tax_percent', 0);
+
         $transaction = null;
 
         try {
-            $transaction = DB::transaction(function () use ($request, $shift) {
+            $transaction = DB::transaction(function () use ($request, $shift, $taxPercent) {
                 // ── Kunci baris stok yang terlibat, urut berdasarkan product_id ──
                 // Urutan yang konsisten (ascending) mencegah deadlock kalau ada dua
                 // checkout paralel yang sama-sama butuh produk A & B tapi beda urutan
@@ -127,7 +134,14 @@ class KasirWebController extends Controller
                     ];
                 }
 
-                if ($request->payment < $total) {
+                // ── Pajak (diatur Owner lewat halaman Settings) ──
+                // 'total' (dan seluruh akumulasi omzet turunan lain di bawah)
+                // sengaja dihitung SETELAH pajak, karena itulah nominal yang
+                // benar-benar diterima kasir dari customer.
+                $taxAmount  = round($total * $taxPercent / 100);
+                $grandTotal = $total + $taxAmount;
+
+                if ($request->payment < $grandTotal) {
                     throw new \RuntimeException('Jumlah pembayaran kurang dari total belanja.');
                 }
 
@@ -137,10 +151,12 @@ class KasirWebController extends Controller
                     'user_id'        => Auth::id(),
                     'branch_id'      => session('branch_id'),
                     'shift_id'       => $shift->id,
-                    'total'          => $total,
+                    'subtotal'       => $total,
+                    'tax_amount'     => $taxAmount,
+                    'total'          => $grandTotal,
                     'payment'        => $request->payment,
                     'payment_method' => $request->payment_method,
-                    'change_amount'  => $request->payment - $total,
+                    'change_amount'  => $request->payment - $grandTotal,
                     'status'         => 'sukses',
                     // Kalau request ini datang lewat sync offline (ada client_txn_id
                     // dan dikirim setelah delay), tetap ditandai tersinkronisasi karena
@@ -162,17 +178,18 @@ class KasirWebController extends Controller
                     $row['stock']->decrement('quantity', $row['qty']);
                 }
 
-                // Update akumulasi shift
-                $shift->increment('total_sales', $total);
+                // Update akumulasi shift (pakai grandTotal — nominal yang
+                // benar-benar diterima kasir termasuk pajak).
+                $shift->increment('total_sales', $grandTotal);
                 $shift->increment('total_transactions');
 
                 // Pisahkan akumulasi cash vs QRIS supaya rekonsiliasi kas fisik
                 // saat tutup shift (closeShift) tidak ikut menghitung uang QRIS
                 // yang tidak pernah masuk ke laci kas.
                 if ($request->payment_method === 'qris') {
-                    $shift->increment('total_qris_sales', $total);
+                    $shift->increment('total_qris_sales', $grandTotal);
                 } else {
-                    $shift->increment('total_cash_sales', $total);
+                    $shift->increment('total_cash_sales', $grandTotal);
                 }
 
                 // ── Ringkasan keuangan harian per cabang (financial_reports) ──
@@ -189,7 +206,7 @@ class KasirWebController extends Controller
                         net_profit = net_profit + VALUES(net_profit),
                         total_transactions = total_transactions + 1,
                         updated_at = NOW()',
-                    [$shift->branch_id, now()->toDateString(), $total, $total]
+                    [$shift->branch_id, now()->toDateString(), $grandTotal, $grandTotal]
                 );
 
                 return $transaction;
