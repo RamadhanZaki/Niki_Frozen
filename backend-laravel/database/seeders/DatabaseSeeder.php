@@ -9,6 +9,17 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Password default untuk akun seed. Ambil dari .env (SEED_DEFAULT_PASSWORD)
+        // supaya tidak ada password tetap yang ter-commit di kode publik.
+        // Kalau tidak diisi, fallback ke string acak dan akan dicetak ke log
+        // sekali saja supaya kamu bisa login pertama kali lalu segera diganti.
+        $seedPassword = env('SEED_DEFAULT_PASSWORD');
+        if (empty($seedPassword)) {
+            $seedPassword = \Illuminate\Support\Str::random(12);
+            $this->command?->warn("SEED_DEFAULT_PASSWORD tidak diset di .env. Password sementara untuk semua akun seed: {$seedPassword}");
+            $this->command?->warn('Segera login dan ganti password ini setelah deploy.');
+        }
+
         // Branches
         DB::table('branches')->insert([
             ['name' => 'Cabang Utama', 'address' => 'Jl. Utama No. 1, Yogyakarta', 'phone' => '081234567890', 'created_at' => now(), 'updated_at' => now()],
@@ -17,10 +28,10 @@ class DatabaseSeeder extends Seeder
 
         // Users
         DB::table('users')->insert([
-            ['name' => 'Owner Nicky Frozen', 'email' => 'owner@nicksfrozen.com', 'password' => Hash::make('password123'), 'role' => 'owner', 'branch_id' => null, 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Siti Aisyah', 'email' => 'siti@nicksfrozen.com', 'password' => Hash::make('password123'), 'role' => 'kasir', 'branch_id' => 1, 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Budi Santoso', 'email' => 'budi@nicksfrozen.com', 'password' => Hash::make('password123'), 'role' => 'kasir', 'branch_id' => 2, 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Dewi Lestari', 'email' => 'dewi@nicksfrozen.com', 'password' => Hash::make('password123'), 'role' => 'kasir', 'branch_id' => 1, 'status' => 'nonaktif', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Owner Nicky Frozen', 'email' => 'owner@nicksfrozen.com', 'password' => Hash::make($seedPassword), 'role' => 'owner', 'branch_id' => null, 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Siti Aisyah', 'email' => 'siti@nicksfrozen.com', 'password' => Hash::make($seedPassword), 'role' => 'kasir', 'branch_id' => 1, 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Budi Santoso', 'email' => 'budi@nicksfrozen.com', 'password' => Hash::make($seedPassword), 'role' => 'kasir', 'branch_id' => 2, 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Dewi Lestari', 'email' => 'dewi@nicksfrozen.com', 'password' => Hash::make($seedPassword), 'role' => 'kasir', 'branch_id' => 1, 'status' => 'nonaktif', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // Products

@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip jika tabel sudah ada (misalnya setup awal via import SQL backup)
+        if (Schema::hasTable('sessions')) {
+            return;
+        }
+
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
