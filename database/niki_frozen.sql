@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 01, 2026 at 09:54 AM
+-- Generation Time: Jul 07, 2026 at 10:36 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -107,7 +107,9 @@ CREATE TABLE `financial_reports` (
 --
 
 INSERT INTO `financial_reports` (`id`, `branch_id`, `date`, `total_revenue`, `total_expense`, `net_profit`, `total_transactions`, `created_at`, `updated_at`) VALUES
-(1, 1, '2026-07-01', 142000.00, 0.00, 142000.00, 1, '2026-07-01 07:25:04', '2026-07-01 07:25:04');
+(1, 1, '2026-07-01', 142000.00, 0.00, 142000.00, 1, '2026-07-01 07:25:04', '2026-07-01 07:25:04'),
+(2, 1, '2026-07-03', 282000.00, 0.00, 282000.00, 3, '2026-07-03 03:02:21', '2026-07-03 04:32:17'),
+(3, 2, '2026-07-03', 3282422.00, 0.00, 3282422.00, 11, '2026-07-03 03:17:18', '2026-07-03 08:47:05');
 
 -- --------------------------------------------------------
 
@@ -128,7 +130,8 @@ CREATE TABLE `invoice_counters` (
 --
 
 INSERT INTO `invoice_counters` (`id`, `counter_date`, `last_number`, `created_at`, `updated_at`) VALUES
-(1, '2026-07-01', 2, '2026-07-01 06:49:22', '2026-07-01 07:25:04');
+(1, '2026-07-01', 2, '2026-07-01 06:49:22', '2026-07-01 07:25:04'),
+(3, '2026-07-03', 14, '2026-07-03 03:02:21', '2026-07-03 08:47:05');
 
 -- --------------------------------------------------------
 
@@ -200,7 +203,12 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (16, '2026_06_30_090000_change_category_to_string_on_products_table', 13),
 (17, '2026_07_01_000000_add_client_txn_id_to_transactions_table', 14),
 (18, '2026_07_01_000001_create_invoice_counters_table', 15),
-(19, '2026_07_01_000002_create_notifications_table', 16);
+(19, '2026_07_01_000002_create_notifications_table', 16),
+(20, '2026_07_01_000003_create_sessions_table', 17),
+(21, '2026_07_02_000000_add_payment_method_to_transactions_table', 17),
+(22, '2026_07_03_000000_add_payment_breakdown_to_shifts_table', 17),
+(23, '2026_07_03_000001_add_tax_to_transactions_table', 18),
+(24, '2026_07_03_000002_add_rounding_amount_to_transactions_table', 19);
 
 -- --------------------------------------------------------
 
@@ -224,6 +232,13 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`id`, `type`, `notifiable_type`, `notifiable_id`, `data`, `read_at`, `created_at`, `updated_at`) VALUES
+('1ef4a4c0-dfcf-4ddc-8ab9-c2d0d9386948', 'App\\Notifications\\QrisPaymentNotification', 'App\\Models\\User', 1, '{\"title\":\"Pembayaran QRIS Masuk\",\"message\":\"Transaksi INV-20260703-0007 sebesar Rp96.000 dibayar via QRIS oleh Marjukii di cabang Cabang Utama.\",\"transaction_id\":15,\"branch_id\":1,\"amount\":96000}', '2026-07-03 08:24:08', '2026-07-03 04:32:17', '2026-07-03 08:24:08'),
+('25c1183c-49a9-425a-a1a6-915cd5e9fa25', 'App\\Notifications\\CashDifferenceNotification', 'App\\Models\\User', 1, '{\"title\":\"Selisih Kas Shift\",\"message\":\"Shift Marjukii di cabang Cabang Utama ditutup dengan selisih kas kurang Rp48.000.\",\"shift_id\":15,\"branch_id\":1,\"difference\":-48000}', '2026-07-03 08:24:08', '2026-07-03 04:32:37', '2026-07-03 08:24:08'),
+('319c2638-fd5e-4025-a84a-fa46e1b9c631', 'App\\Notifications\\QrisPaymentNotification', 'App\\Models\\User', 1, '{\"title\":\"Pembayaran QRIS Masuk\",\"message\":\"Transaksi INV-20260703-0014 sebesar Rp193.344 dibayar via QRIS oleh Sandi di cabang Cabang Kedua.\",\"transaction_id\":22,\"branch_id\":2,\"amount\":193344}', NULL, '2026-07-03 08:47:05', '2026-07-03 08:47:05'),
+('31ab668e-866f-49fd-89bb-4f7a53095945', 'App\\Notifications\\QrisPaymentNotification', 'App\\Models\\User', 1, '{\"title\":\"Pembayaran QRIS Masuk\",\"message\":\"Transaksi INV-20260703-0005 sebesar Rp457.000 dibayar via QRIS oleh Sandi di cabang Cabang Kedua.\",\"transaction_id\":13,\"branch_id\":2,\"amount\":457000}', '2026-07-03 04:08:52', '2026-07-03 04:05:52', '2026-07-03 04:08:52'),
+('5af80724-090e-4f2e-8ef1-ab8433970ecc', 'App\\Notifications\\CashDifferenceNotification', 'App\\Models\\User', 1, '{\"title\":\"Selisih Kas Shift\",\"message\":\"Shift Sandi di cabang Cabang Kedua ditutup dengan selisih kas lebih Rp25.000.\",\"shift_id\":13,\"branch_id\":2,\"difference\":25000}', '2026-07-03 04:08:52', '2026-07-03 03:42:25', '2026-07-03 04:08:52'),
+('a453c286-2b82-46e9-9d0c-0476b7e36b6a', 'App\\Notifications\\QrisPaymentNotification', 'App\\Models\\User', 1, '{\"title\":\"Pembayaran QRIS Masuk\",\"message\":\"Transaksi INV-20260703-0008 sebesar Rp52.800 dibayar via QRIS oleh Sandi di cabang Cabang Kedua.\",\"transaction_id\":16,\"branch_id\":2,\"amount\":52800}', '2026-07-03 08:24:08', '2026-07-03 04:33:29', '2026-07-03 08:24:08'),
+('c64e8fe7-2cd7-46ca-8f62-11b1f1e991a6', 'App\\Notifications\\QrisPaymentNotification', 'App\\Models\\User', 1, '{\"title\":\"Pembayaran QRIS Masuk\",\"message\":\"Transaksi INV-20260703-0009 sebesar Rp46.322 dibayar via QRIS oleh Sandi di cabang Cabang Kedua.\",\"transaction_id\":17,\"branch_id\":2,\"amount\":46322}', '2026-07-03 08:24:08', '2026-07-03 05:11:27', '2026-07-03 08:24:08'),
 ('da91533d-b18f-4fa2-ab5e-2fa0ffc3d6da', 'App\\Notifications\\CashDifferenceNotification', 'App\\Models\\User', 1, '{\"title\":\"Selisih Kas Shift\",\"message\":\"Shift Marjukii di cabang Cabang Utama ditutup dengan selisih kas lebih Rp8.000.\",\"shift_id\":10,\"branch_id\":1,\"difference\":8000}', '2026-07-01 07:26:07', '2026-07-01 07:25:41', '2026-07-01 07:26:07');
 
 -- --------------------------------------------------------
@@ -291,7 +306,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `category`, `image`, `price`, `expired_date`, `branch_id`, `created_at`, `updated_at`) VALUES
-(6, 'Fiesta Chicken Katsu 500g', 'Frozen', 'products/dP49Ke6WenklaLU3WoI9aPBqt3yo60SjBYTc3FZ6.jpg', 46000.00, '2027-11-16', 1, '2026-06-10 22:53:29', '2026-07-01 05:44:33'),
+(6, 'Fiesta Chicken Katsu 500g', 'Frozen', 'products/5yrjM1teSmT4Fd9e74y81vjUYf4r90ZMFCImVFew.png', 46000.00, '2027-11-15', 1, '2026-06-10 22:53:29', '2026-07-03 02:22:17'),
 (7, 'Fiesta Chicken Ring 500g', 'Frozen', 'products/bC9liFF7pKERxw8DMHNZCzZwKazog4LRJa1MMb6J.jpg', 48000.00, '2027-06-15', 1, '2026-06-10 22:53:29', '2026-07-01 05:46:10'),
 (11, 'Fiesta Crispy Wings 500g', 'Frozen', 'products/l9m20BTA7Owa58Dsksi9m8hCSrDzK8gvGDMGxExZ.jpg', 75000.00, '2027-07-07', 2, '2026-06-11 04:28:42', '2026-07-01 05:43:21'),
 (12, 'Fiesta Crispy Wings 500g', 'Frozen', 'products/KGK8CF0yrvUDlMzWMailS6F2wNenR8XB7bzQEBfR.jpg', 75000.00, '2027-07-07', 1, '2026-06-30 02:21:25', '2026-07-01 05:43:48'),
@@ -321,9 +336,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('77l47EAKRdsc8P0dicdCk2eHVgyIGSeqkKTnmM4s', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.126.0 Chrome/148.0.7778.97 Electron/42.2.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNzkzeUFnQkxUUmZqQ2ZsaFBpa3FNaHFCZmN3YnlHcExWVHVKdjluVSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1782890549),
-('am7pryMDmJVq7Ldy1cWt2skaioVSnxz7motyUoBn', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoicWNjMDdlZnc5WVJMRjQ1S2FaQXVQTEdYRkEzODRWRmppdEtTRGNNSiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9vd25lci9icmFuY2hlcyI7czo1OiJyb3V0ZSI7czoxNDoib3duZXIuYnJhbmNoZXMiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6NDoibmFtZSI7czoxODoiT3duZXIgTmlja3kgRnJvemVuIjtzOjQ6InJvbGUiO3M6NToib3duZXIiO3M6OToiYnJhbmNoX2lkIjtOO30=', 1782892059),
-('tMAEjBsZPasct97IEqro3CwOAdxoSKN6Z8JvE0Iw', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVlNBNnhDZVpkV3NieEs4cnVaTzdaT1lVN0RKNUw0bThYc2tFWWt1dyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1782890566);
+('cT2IVpzedzI5ePQ5f94uVuMnYIVgIZw8tnyv5e3q', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiSkRLZVRPa0g5QkVoV2RUZUtqajhUdGJjSzRpUU1KT000Z3h0YnY3UCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1783412268),
+('Ux1Pau2lBwNPGIp88oxWWLYan3oQA8uUp1pePVZN', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoibUhqYmpNVzBPQVd5TVlYMUIxN0hZOGtaZ0VvN2Z2d3JSMmNGazBBbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9vd25lci9kYXNoYm9hcmQiO3M6NToicm91dGUiO3M6MTU6Im93bmVyLmRhc2hib2FyZCI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo0OiJuYW1lIjtzOjE4OiJPd25lciBOaWNreSBGcm96ZW4iO3M6NDoicm9sZSI7czo1OiJvd25lciI7czo5OiJicmFuY2hfaWQiO047fQ==', 1783413262);
 
 -- --------------------------------------------------------
 
@@ -352,7 +366,7 @@ INSERT INTO `settings` (`id`, `key`, `value`, `label`, `type`, `created_at`, `up
 (4, 'store_phone', '081234567890', 'No. Telepon Toko', 'text', '2026-06-12 22:26:50', '2026-06-12 23:03:52'),
 (5, 'low_stock_threshold', '10', 'Batas Stok Menipis', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50'),
 (6, 'expiry_warning_days', '7', 'Peringatan Expired (hari)', 'number', '2026-06-12 22:26:50', '2026-06-12 22:26:50'),
-(7, 'tax_percent', '0', NULL, 'text', '2026-06-30 10:04:08', '2026-06-30 10:04:08'),
+(7, 'tax_percent', '0.7', NULL, 'text', '2026-06-30 10:04:08', '2026-07-03 05:10:06'),
 (8, 'receipt_note', 'Terima kasih telah berbelanja!', NULL, 'text', '2026-06-30 10:04:08', '2026-06-30 10:04:08');
 
 -- --------------------------------------------------------
@@ -370,6 +384,8 @@ CREATE TABLE `shifts` (
   `expected_cash` decimal(12,2) DEFAULT NULL,
   `difference` decimal(12,2) DEFAULT NULL,
   `total_sales` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total_cash_sales` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total_qris_sales` decimal(12,2) NOT NULL DEFAULT 0.00,
   `total_transactions` int(11) NOT NULL DEFAULT 0,
   `status` enum('aktif','tutup') NOT NULL DEFAULT 'aktif',
   `opened_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -382,17 +398,25 @@ CREATE TABLE `shifts` (
 -- Dumping data for table `shifts`
 --
 
-INSERT INTO `shifts` (`id`, `user_id`, `branch_id`, `opening_cash`, `closing_cash`, `expected_cash`, `difference`, `total_sales`, `total_transactions`, `status`, `opened_at`, `closed_at`, `created_at`, `updated_at`) VALUES
-(1, 2, 1, 10000.00, 10000.00, 10000.00, 0.00, 0.00, 0, 'tutup', '2026-06-18 01:55:10', '2026-06-18 01:57:12', '2026-06-18 01:55:10', '2026-06-18 01:57:12'),
-(2, 2, 1, 10000.00, 30000.00, 30000.00, 0.00, 20000.00, 1, 'tutup', '2026-06-18 02:00:00', '2026-06-18 03:00:12', '2026-06-18 02:00:00', '2026-06-18 03:00:12'),
-(3, 2, 1, 10000.00, 35000.00, 35000.00, 0.00, 25000.00, 1, 'tutup', '2026-06-18 03:01:34', '2026-06-18 03:02:32', '2026-06-18 03:01:34', '2026-06-18 03:02:32'),
-(4, 5, 1, 10000.00, 118000.00, 118000.00, 0.00, 108000.00, 1, 'tutup', '2026-06-30 01:02:09', '2026-06-30 01:03:16', '2026-06-30 01:02:09', '2026-06-30 01:03:16'),
-(5, 5, 1, 0.00, 63000.00, 63000.00, 0.00, 63000.00, 2, 'tutup', '2026-06-30 01:18:21', '2026-06-30 02:17:09', '2026-06-30 01:18:21', '2026-06-30 02:17:09'),
-(6, 5, 1, 0.00, 0.00, 0.00, 0.00, 0.00, 0, 'tutup', '2026-06-30 02:19:08', '2026-06-30 09:51:56', '2026-06-30 02:19:08', '2026-06-30 09:51:56'),
-(7, 5, 1, 0.00, 65000.00, 65000.00, 0.00, 65000.00, 1, 'tutup', '2026-06-30 09:52:06', '2026-06-30 09:52:48', '2026-06-30 09:52:06', '2026-06-30 09:52:48'),
-(8, 5, 1, 0.00, 46000.00, 46000.00, 0.00, 46000.00, 1, 'tutup', '2026-07-01 06:48:24', '2026-07-01 06:49:39', '2026-07-01 06:48:24', '2026-07-01 06:49:39'),
-(9, 5, 1, 0.00, 0.00, 0.00, 0.00, 0.00, 0, 'tutup', '2026-07-01 06:51:57', '2026-07-01 06:52:20', '2026-07-01 06:51:57', '2026-07-01 06:52:20'),
-(10, 5, 1, 0.00, 150000.00, 142000.00, 8000.00, 142000.00, 1, 'tutup', '2026-07-01 07:24:53', '2026-07-01 07:25:40', '2026-07-01 07:24:53', '2026-07-01 07:25:40');
+INSERT INTO `shifts` (`id`, `user_id`, `branch_id`, `opening_cash`, `closing_cash`, `expected_cash`, `difference`, `total_sales`, `total_cash_sales`, `total_qris_sales`, `total_transactions`, `status`, `opened_at`, `closed_at`, `created_at`, `updated_at`) VALUES
+(1, 2, 1, 10000.00, 10000.00, 10000.00, 0.00, 0.00, 0.00, 0.00, 0, 'tutup', '2026-06-18 01:55:10', '2026-06-18 01:57:12', '2026-06-18 01:55:10', '2026-06-18 01:57:12'),
+(2, 2, 1, 10000.00, 30000.00, 30000.00, 0.00, 20000.00, 0.00, 0.00, 1, 'tutup', '2026-06-18 02:00:00', '2026-06-18 03:00:12', '2026-06-18 02:00:00', '2026-06-18 03:00:12'),
+(3, 2, 1, 10000.00, 35000.00, 35000.00, 0.00, 25000.00, 0.00, 0.00, 1, 'tutup', '2026-06-18 03:01:34', '2026-06-18 03:02:32', '2026-06-18 03:01:34', '2026-06-18 03:02:32'),
+(4, 5, 1, 10000.00, 118000.00, 118000.00, 0.00, 108000.00, 0.00, 0.00, 1, 'tutup', '2026-06-30 01:02:09', '2026-06-30 01:03:16', '2026-06-30 01:02:09', '2026-06-30 01:03:16'),
+(5, 5, 1, 0.00, 63000.00, 63000.00, 0.00, 63000.00, 0.00, 0.00, 2, 'tutup', '2026-06-30 01:18:21', '2026-06-30 02:17:09', '2026-06-30 01:18:21', '2026-06-30 02:17:09'),
+(6, 5, 1, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0, 'tutup', '2026-06-30 02:19:08', '2026-06-30 09:51:56', '2026-06-30 02:19:08', '2026-06-30 09:51:56'),
+(7, 5, 1, 0.00, 65000.00, 65000.00, 0.00, 65000.00, 0.00, 0.00, 1, 'tutup', '2026-06-30 09:52:06', '2026-06-30 09:52:48', '2026-06-30 09:52:06', '2026-06-30 09:52:48'),
+(8, 5, 1, 0.00, 46000.00, 46000.00, 0.00, 46000.00, 0.00, 0.00, 1, 'tutup', '2026-07-01 06:48:24', '2026-07-01 06:49:39', '2026-07-01 06:48:24', '2026-07-01 06:49:39'),
+(9, 5, 1, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0, 'tutup', '2026-07-01 06:51:57', '2026-07-01 06:52:20', '2026-07-01 06:51:57', '2026-07-01 06:52:20'),
+(10, 5, 1, 0.00, 150000.00, 142000.00, 8000.00, 142000.00, 0.00, 0.00, 1, 'tutup', '2026-07-01 07:24:53', '2026-07-01 07:25:40', '2026-07-01 07:24:53', '2026-07-01 07:25:40'),
+(11, 5, 1, 0.00, 0.00, 0.00, 0.00, 138000.00, 0.00, 138000.00, 1, 'tutup', '2026-07-03 03:02:15', '2026-07-03 03:02:34', '2026-07-03 03:02:15', '2026-07-03 03:02:34'),
+(12, 7, 2, 0.00, 0.00, 0.00, 0.00, 432000.00, 0.00, 432000.00, 1, 'tutup', '2026-07-03 03:17:03', '2026-07-03 03:17:33', '2026-07-03 03:17:03', '2026-07-03 03:17:33'),
+(13, 7, 2, 0.00, 100000.00, 75000.00, 25000.00, 167000.00, 75000.00, 92000.00, 2, 'tutup', '2026-07-03 03:40:44', '2026-07-03 03:42:25', '2026-07-03 03:40:44', '2026-07-03 03:42:25'),
+(14, 7, 2, 0.00, 0.00, 0.00, 0.00, 457000.00, 0.00, 457000.00, 1, 'tutup', '2026-07-03 04:05:30', '2026-07-03 04:06:17', '2026-07-03 04:05:30', '2026-07-03 04:06:17'),
+(15, 5, 1, 0.00, 0.00, 48000.00, -48000.00, 144000.00, 48000.00, 96000.00, 2, 'tutup', '2026-07-03 04:31:52', '2026-07-03 04:32:37', '2026-07-03 04:31:52', '2026-07-03 04:32:37'),
+(16, 7, 2, 0.00, 1216456.00, 1216456.00, 0.00, 1315578.00, 1216456.00, 99122.00, 4, 'tutup', '2026-07-03 04:33:21', '2026-07-03 05:28:27', '2026-07-03 04:33:21', '2026-07-03 05:28:27'),
+(17, 7, 2, 0.00, 342500.00, 342500.00, 0.00, 342500.00, 342500.00, 0.00, 1, 'tutup', '2026-07-03 05:42:17', '2026-07-03 05:44:23', '2026-07-03 05:42:17', '2026-07-03 05:44:23'),
+(18, 7, 2, 0.00, 375000.00, 375000.00, 0.00, 568344.00, 375000.00, 193344.00, 2, 'tutup', '2026-07-03 08:45:54', '2026-07-03 08:47:23', '2026-07-03 08:45:54', '2026-07-03 08:47:23');
 
 -- --------------------------------------------------------
 
@@ -414,14 +438,14 @@ CREATE TABLE `stocks` (
 --
 
 INSERT INTO `stocks` (`id`, `product_id`, `branch_id`, `quantity`, `min_stock`, `updated_at`) VALUES
-(6, 6, 1, 98, 10, '2026-06-10 22:53:29'),
-(7, 7, 1, 98, 10, '2026-06-10 22:53:29'),
-(11, 11, 2, 100, 10, '2026-06-30 02:20:06'),
+(6, 6, 1, 95, 10, '2026-06-10 22:53:29'),
+(7, 7, 1, 95, 10, '2026-06-10 22:53:29'),
+(11, 11, 2, 92, 10, '2026-06-30 02:20:06'),
 (12, 12, 1, 100, 10, NULL),
-(13, 13, 2, 100, 10, NULL),
-(14, 14, 2, 100, 10, NULL),
+(13, 13, 2, 81, 10, NULL),
+(14, 14, 2, 71, 10, NULL),
 (15, 15, 1, 100, 10, NULL),
-(16, 16, 2, 100, 10, NULL),
+(16, 16, 2, 93, 10, NULL),
 (17, 17, 1, 100, 10, NULL);
 
 -- --------------------------------------------------------
@@ -464,8 +488,12 @@ CREATE TABLE `transactions` (
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `branch_id` bigint(20) UNSIGNED NOT NULL,
   `shift_id` bigint(20) UNSIGNED NOT NULL,
+  `subtotal` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `tax_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `rounding_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
   `total` decimal(12,2) NOT NULL DEFAULT 0.00,
   `payment` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `payment_method` enum('cash','qris') NOT NULL DEFAULT 'cash',
   `change_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
   `status` enum('sukses','batal','pending') NOT NULL DEFAULT 'sukses',
   `sync_status` enum('tersinkronisasi','pending','gagal') NOT NULL DEFAULT 'tersinkronisasi',
@@ -478,15 +506,29 @@ CREATE TABLE `transactions` (
 -- Dumping data for table `transactions`
 --
 
-INSERT INTO `transactions` (`id`, `invoice_number`, `client_txn_id`, `user_id`, `branch_id`, `shift_id`, `total`, `payment`, `change_amount`, `status`, `sync_status`, `synced_at`, `created_at`, `updated_at`) VALUES
-(1, 'INV-20260618-0001', NULL, 2, 1, 2, 20000.00, 50000.00, 30000.00, 'sukses', 'tersinkronisasi', '2026-06-18 02:00:26', '2026-06-18 02:00:26', '2026-06-18 02:00:26'),
-(2, 'INV-20260618-0002', NULL, 2, 1, 3, 25000.00, 50000.00, 25000.00, 'sukses', 'tersinkronisasi', '2026-06-18 03:01:59', '2026-06-18 03:01:59', '2026-06-18 03:01:59'),
-(3, 'INV-20260630-0003', NULL, 5, 1, 4, 108000.00, 150000.00, 42000.00, 'sukses', 'tersinkronisasi', '2026-06-30 01:02:55', '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
-(4, 'INV-20260630-0004', NULL, 5, 1, 5, 28000.00, 50000.00, 22000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:12:33', '2026-06-30 02:12:33', '2026-06-30 02:12:33'),
-(5, 'INV-20260630-0005', NULL, 5, 1, 5, 35000.00, 70000.00, 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:13:01', '2026-06-30 02:13:01', '2026-06-30 02:13:01'),
-(6, 'INV-20260630-0006', NULL, 5, 1, 7, 65000.00, 100000.00, 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 09:52:24', '2026-06-30 09:52:24', '2026-06-30 09:52:24'),
-(7, 'INV-20260701-0001', 'txn-1782888561925-3iw1t8tw', 5, 1, 8, 46000.00, 100000.00, 54000.00, 'sukses', 'tersinkronisasi', '2026-07-01 06:49:22', '2026-07-01 06:49:22', '2026-07-01 06:49:22'),
-(8, 'INV-20260701-0002', 'txn-1782890704251-mb7d1gqx', 5, 1, 10, 142000.00, 200000.00, 58000.00, 'sukses', 'tersinkronisasi', '2026-07-01 07:25:04', '2026-07-01 07:25:04', '2026-07-01 07:25:04');
+INSERT INTO `transactions` (`id`, `invoice_number`, `client_txn_id`, `user_id`, `branch_id`, `shift_id`, `subtotal`, `tax_amount`, `rounding_amount`, `total`, `payment`, `payment_method`, `change_amount`, `status`, `sync_status`, `synced_at`, `created_at`, `updated_at`) VALUES
+(1, 'INV-20260618-0001', NULL, 2, 1, 2, 0.00, 0.00, 0.00, 20000.00, 50000.00, 'cash', 30000.00, 'sukses', 'tersinkronisasi', '2026-06-18 02:00:26', '2026-06-18 02:00:26', '2026-06-18 02:00:26'),
+(2, 'INV-20260618-0002', NULL, 2, 1, 3, 0.00, 0.00, 0.00, 25000.00, 50000.00, 'cash', 25000.00, 'sukses', 'tersinkronisasi', '2026-06-18 03:01:59', '2026-06-18 03:01:59', '2026-06-18 03:01:59'),
+(3, 'INV-20260630-0003', NULL, 5, 1, 4, 0.00, 0.00, 0.00, 108000.00, 150000.00, 'cash', 42000.00, 'sukses', 'tersinkronisasi', '2026-06-30 01:02:55', '2026-06-30 01:02:55', '2026-06-30 01:02:55'),
+(4, 'INV-20260630-0004', NULL, 5, 1, 5, 0.00, 0.00, 0.00, 28000.00, 50000.00, 'cash', 22000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:12:33', '2026-06-30 02:12:33', '2026-06-30 02:12:33'),
+(5, 'INV-20260630-0005', NULL, 5, 1, 5, 0.00, 0.00, 0.00, 35000.00, 70000.00, 'cash', 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 02:13:01', '2026-06-30 02:13:01', '2026-06-30 02:13:01'),
+(6, 'INV-20260630-0006', NULL, 5, 1, 7, 0.00, 0.00, 0.00, 65000.00, 100000.00, 'cash', 35000.00, 'sukses', 'tersinkronisasi', '2026-06-30 09:52:24', '2026-06-30 09:52:24', '2026-06-30 09:52:24'),
+(7, 'INV-20260701-0001', 'txn-1782888561925-3iw1t8tw', 5, 1, 8, 0.00, 0.00, 0.00, 46000.00, 100000.00, 'cash', 54000.00, 'sukses', 'tersinkronisasi', '2026-07-01 06:49:22', '2026-07-01 06:49:22', '2026-07-01 06:49:22'),
+(8, 'INV-20260701-0002', 'txn-1782890704251-mb7d1gqx', 5, 1, 10, 0.00, 0.00, 0.00, 142000.00, 200000.00, 'cash', 58000.00, 'sukses', 'tersinkronisasi', '2026-07-01 07:25:04', '2026-07-01 07:25:04', '2026-07-01 07:25:04'),
+(9, 'INV-20260703-0001', 'txn-1783047741245-592svgix', 5, 1, 11, 0.00, 0.00, 0.00, 138000.00, 138000.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 03:02:21', '2026-07-03 03:02:21', '2026-07-03 03:02:21'),
+(10, 'INV-20260703-0002', 'txn-1783048637894-5kpqr5yx', 7, 2, 12, 0.00, 0.00, 0.00, 432000.00, 432000.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 03:17:18', '2026-07-03 03:17:18', '2026-07-03 03:17:18'),
+(11, 'INV-20260703-0003', 'txn-1783050119502-7was1c2n', 7, 2, 13, 0.00, 0.00, 0.00, 75000.00, 100000.00, 'cash', 25000.00, 'sukses', 'tersinkronisasi', '2026-07-03 03:41:59', '2026-07-03 03:41:59', '2026-07-03 03:41:59'),
+(12, 'INV-20260703-0004', 'txn-1783050129116-xltbwrz9', 7, 2, 13, 0.00, 0.00, 0.00, 92000.00, 92000.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 03:42:09', '2026-07-03 03:42:09', '2026-07-03 03:42:09'),
+(13, 'INV-20260703-0005', 'txn-1783051551784-ohcmfbe1', 7, 2, 14, 0.00, 0.00, 0.00, 457000.00, 457000.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 04:05:52', '2026-07-03 04:05:52', '2026-07-03 04:05:52'),
+(14, 'INV-20260703-0006', 'txn-1783053128424-wlavdt84', 5, 1, 15, 48000.00, 0.00, 0.00, 48000.00, 50000.00, 'cash', 2000.00, 'sukses', 'tersinkronisasi', '2026-07-03 04:32:08', '2026-07-03 04:32:08', '2026-07-03 04:32:08'),
+(15, 'INV-20260703-0007', 'txn-1783053137348-r9txgr1p', 5, 1, 15, 96000.00, 0.00, 0.00, 96000.00, 96000.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 04:32:17', '2026-07-03 04:32:17', '2026-07-03 04:32:17'),
+(16, 'INV-20260703-0008', 'txn-1783053209498-kx2ndzh5', 7, 2, 16, 48000.00, 4800.00, 0.00, 52800.00, 52800.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 04:33:29', '2026-07-03 04:33:29', '2026-07-03 04:33:29'),
+(17, 'INV-20260703-0009', 'txn-1783055487163-p8u3hdr1', 7, 2, 16, 46000.00, 322.00, 0.00, 46322.00, 46322.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 05:11:27', '2026-07-03 05:11:27', '2026-07-03 05:11:27'),
+(18, 'INV-20260703-0010', 'txn-1783056000043-ved3jqx6', 7, 2, 16, 196000.00, 1372.00, 0.00, 197372.00, 200000.00, 'cash', 2628.00, 'sukses', 'tersinkronisasi', '2026-07-03 05:20:01', '2026-07-03 05:20:01', '2026-07-03 05:20:01'),
+(19, 'INV-20260703-0011', 'txn-1783056459019-vz8r83fe', 7, 2, 16, 1012000.00, 7084.00, 0.00, 1019084.00, 1050000.00, 'cash', 30916.00, 'sukses', 'tersinkronisasi', '2026-07-03 05:27:59', '2026-07-03 05:27:59', '2026-07-03 05:27:59'),
+(20, 'INV-20260703-0012', 'txn-1783057430166-d9vevjmo', 7, 2, 17, 340000.00, 2380.00, 120.00, 342500.00, 350000.00, 'cash', 7500.00, 'sukses', 'tersinkronisasi', '2026-07-03 05:43:50', '2026-07-03 05:43:50', '2026-07-03 05:43:50'),
+(21, 'INV-20260703-0013', 'txn-1783068414963-0t22wokz', 7, 2, 18, 372500.00, 2608.00, -108.00, 375000.00, 400000.00, 'cash', 25000.00, 'sukses', 'tersinkronisasi', '2026-07-03 08:46:55', '2026-07-03 08:46:55', '2026-07-03 08:46:55'),
+(22, 'INV-20260703-0014', 'txn-1783068424961-a5i6az5o', 7, 2, 18, 192000.00, 1344.00, 0.00, 193344.00, 193344.00, 'qris', 0.00, 'sukses', 'tersinkronisasi', '2026-07-03 08:47:05', '2026-07-03 08:47:05', '2026-07-03 08:47:05');
 
 -- --------------------------------------------------------
 
@@ -516,7 +558,28 @@ INSERT INTO `transaction_details` (`id`, `transaction_id`, `product_id`, `qty`, 
 (10, 6, 12, 1, 10000.00, 10000.00, '2026-06-30 09:52:24', '2026-06-30 09:52:24'),
 (11, 7, 6, 1, 46000.00, 46000.00, '2026-07-01 06:49:22', '2026-07-01 06:49:22'),
 (12, 8, 6, 1, 46000.00, 46000.00, '2026-07-01 07:25:04', '2026-07-01 07:25:04'),
-(13, 8, 7, 2, 48000.00, 96000.00, '2026-07-01 07:25:04', '2026-07-01 07:25:04');
+(13, 8, 7, 2, 48000.00, 96000.00, '2026-07-01 07:25:04', '2026-07-01 07:25:04'),
+(14, 9, 6, 3, 46000.00, 138000.00, '2026-07-03 03:02:21', '2026-07-03 03:02:21'),
+(15, 10, 13, 9, 48000.00, 432000.00, '2026-07-03 03:17:18', '2026-07-03 03:17:18'),
+(16, 11, 11, 1, 75000.00, 75000.00, '2026-07-03 03:41:59', '2026-07-03 03:41:59'),
+(17, 12, 14, 2, 46000.00, 92000.00, '2026-07-03 03:42:09', '2026-07-03 03:42:09'),
+(18, 13, 14, 2, 46000.00, 92000.00, '2026-07-03 04:05:52', '2026-07-03 04:05:52'),
+(19, 13, 13, 2, 48000.00, 96000.00, '2026-07-03 04:05:52', '2026-07-03 04:05:52'),
+(20, 13, 11, 2, 75000.00, 150000.00, '2026-07-03 04:05:52', '2026-07-03 04:05:52'),
+(21, 13, 16, 2, 59500.00, 119000.00, '2026-07-03 04:05:52', '2026-07-03 04:05:52'),
+(22, 14, 7, 1, 48000.00, 48000.00, '2026-07-03 04:32:08', '2026-07-03 04:32:08'),
+(23, 15, 7, 2, 48000.00, 96000.00, '2026-07-03 04:32:17', '2026-07-03 04:32:17'),
+(24, 16, 13, 1, 48000.00, 48000.00, '2026-07-03 04:33:29', '2026-07-03 04:33:29'),
+(25, 17, 14, 1, 46000.00, 46000.00, '2026-07-03 05:11:27', '2026-07-03 05:11:27'),
+(26, 18, 11, 2, 75000.00, 150000.00, '2026-07-03 05:20:01', '2026-07-03 05:20:01'),
+(27, 18, 14, 1, 46000.00, 46000.00, '2026-07-03 05:20:01', '2026-07-03 05:20:01'),
+(28, 19, 14, 22, 46000.00, 1012000.00, '2026-07-03 05:27:59', '2026-07-03 05:27:59'),
+(29, 20, 11, 2, 75000.00, 150000.00, '2026-07-03 05:43:50', '2026-07-03 05:43:50'),
+(30, 20, 13, 3, 48000.00, 144000.00, '2026-07-03 05:43:50', '2026-07-03 05:43:50'),
+(31, 20, 14, 1, 46000.00, 46000.00, '2026-07-03 05:43:50', '2026-07-03 05:43:50'),
+(32, 21, 11, 1, 75000.00, 75000.00, '2026-07-03 08:46:55', '2026-07-03 08:46:55'),
+(33, 21, 16, 5, 59500.00, 297500.00, '2026-07-03 08:46:55', '2026-07-03 08:46:55'),
+(34, 22, 13, 4, 48000.00, 192000.00, '2026-07-03 08:47:05', '2026-07-03 08:47:05');
 
 -- --------------------------------------------------------
 
@@ -543,11 +606,12 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`, `branch_id`, `status`) VALUES
-(1, 'Owner Nicky Frozen', 'owner@nicksfrozen.com', NULL, '$2y$12$elwss0hHgNi7iLhPpVvslO9v7NIdoIs5eoCqyuBTsIjxsD.ZwZqge', 'owner', 'Q2Lx5hJwZuO3CU3eZGkZnyAIE8ZsLJyl9RTkYfM1jhKZoT5YRgN7jhnq8MID', '2026-06-10 22:53:27', '2026-06-10 22:53:27', NULL, 'aktif'),
+(1, 'Owner Nicky Frozen', 'owner@nicksfrozen.com', NULL, '$2y$12$elwss0hHgNi7iLhPpVvslO9v7NIdoIs5eoCqyuBTsIjxsD.ZwZqge', 'owner', 'INmeAPy5KxojWDC8d9X7EimTg7tSHiZOeNzzDNLvhOLBx4irRQu7Bh16M8OL', '2026-06-10 22:53:27', '2026-06-10 22:53:27', NULL, 'aktif'),
 (2, 'Siti Aisyah', 'siti@nicksfrozen.com', NULL, '$2y$12$rk7Myg1amAJ4trp2WmymEetzcKm7fk6aI1z.eKTn2wlqrRBxPb2CS', 'kasir', NULL, '2026-06-10 22:53:27', '2026-06-23 01:56:45', 2, 'aktif'),
 (3, 'Budi Santoso', 'budi@nicksfrozen.com', NULL, '$2y$12$.93gEZjRWkhSM5rlI3woouakW0w8VA0BkrXXESrYC1BkTtF/lA9d6', 'kasir', NULL, '2026-06-10 22:53:28', '2026-06-10 22:53:28', 2, 'aktif'),
-(5, 'Marjukii', 'ramadhanzaki@students.amikom.ac.id', NULL, '$2y$12$g1e7ZTJlFHWcpxvTswzwVeGWQJevrrq7hXkn3Xhc6FZnB654IIY7m', 'kasir', 'N2XGFzxDk4W4WW2UvLDKhYzqcAepL8ObXLSStDH4GxOB7NW9oGN2eGN4cPaT', '2026-06-11 01:28:47', '2026-06-30 00:55:31', 1, 'aktif'),
-(6, 'ronaldo', 'ronaldo@gmail.com', NULL, '$2y$12$zsoyEEKkYPmGahbPgB6CWeztogDnw0rdPuJ04dKCRp83xGRCIqqIm', 'kasir', NULL, '2026-06-18 00:18:34', '2026-06-18 00:18:34', 2, 'aktif');
+(5, 'Marjukii', 'ramadhanzaki@students.amikom.ac.id', NULL, '$2y$12$g1e7ZTJlFHWcpxvTswzwVeGWQJevrrq7hXkn3Xhc6FZnB654IIY7m', 'kasir', 'QGjtQXPvD41sgxKhx8LLJVgc8r5rPEpndpvfHJ19sErTpIBcnzv1rZlc7EsK', '2026-06-11 01:28:47', '2026-06-30 00:55:31', 1, 'aktif'),
+(6, 'ronaldo', 'ronaldo@gmail.com', NULL, '$2y$12$zsoyEEKkYPmGahbPgB6CWeztogDnw0rdPuJ04dKCRp83xGRCIqqIm', 'kasir', NULL, '2026-06-18 00:18:34', '2026-06-18 00:18:34', 2, 'aktif'),
+(7, 'Sandi', 'SandiSetiawan@students.amikom.ac.id', NULL, '$2y$12$vfcsZ4ML5rWPXiWP0snAlufh2EfROhMI45OlFJh7nlwDHY2RVOcj.', 'kasir', '5HYqeU6ivELg19la4DQVE07IXdpmGDL1RARWXDWbhOOX65d94h9IJGRgXdzW', '2026-07-03 03:16:34', '2026-07-03 03:20:49', 2, 'aktif');
 
 --
 -- Indexes for dumped tables
@@ -729,13 +793,13 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT for table `financial_reports`
 --
 ALTER TABLE `financial_reports`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `invoice_counters`
 --
 ALTER TABLE `invoice_counters`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `jobs`
@@ -747,7 +811,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
@@ -771,7 +835,7 @@ ALTER TABLE `settings`
 -- AUTO_INCREMENT for table `shifts`
 --
 ALTER TABLE `shifts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `stocks`
@@ -789,19 +853,19 @@ ALTER TABLE `stock_mutations`
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `transaction_details`
 --
 ALTER TABLE `transaction_details`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
