@@ -92,7 +92,7 @@
      Ditaruh di tag type="application/json" (BUKAN JavaScript) supaya VS Code
      tidak mencoba mem-parsing isinya sebagai JS/TS. --}}
 <script type="application/json" id="transactionDetailsData">
-    @json(
+    {!! json_encode(
         $transactions->mapWithKeys(fn ($t) => [
             $t->id => [
                 'invoice' => $t->invoice_number,
@@ -109,7 +109,7 @@
                 ]),
             ],
         ])
-    )
+    ) !!}
 </script>
 
 {{-- Script ini 100% JavaScript murni, tidak ada satu karakter Blade pun di
