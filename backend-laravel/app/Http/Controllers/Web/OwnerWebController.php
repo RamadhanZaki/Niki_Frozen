@@ -12,6 +12,7 @@ use App\Models\Shift;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
+use App\Notifications\PasswordResetByOwnerNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -528,6 +529,13 @@ class OwnerWebController extends Controller
         ]);
 
         $user->update(['password' => Hash::make($request->password)]);
+
+        // Beri tahu kasir yang bersangkutan bahwa passwordnya baru saja
+        // direset oleh Owner, supaya tidak bingung tiba-tiba tidak bisa
+        // login. Notifikasi muncul di lonceng dropdown & riwayat notifikasi
+        // kasir begitu dia login berikutnya (atau lewat polling kalau
+        // sedang aktif).
+        $user->notify(new PasswordResetByOwnerNotification($request->user()));
 
         return redirect()->route('owner.users')->with('success', "Password untuk {$user->name} berhasil direset.");
     }

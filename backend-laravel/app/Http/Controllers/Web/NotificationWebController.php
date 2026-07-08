@@ -66,7 +66,7 @@ class NotificationWebController extends Controller
 
         $unreadCount = $request->user()->unreadNotifications()->count();
 
-        return view('owner.notifications', compact('notifications', 'status', 'unreadCount'));
+        return view('notifications', compact('notifications', 'status', 'unreadCount'));
     }
 
     /**

@@ -404,6 +404,10 @@
                class="nav-link {{ request()->routeIs('kasir.transactions') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i> Transaksi
             </a>
+            <a href="{{ route('kasir.notifications.history') }}"
+               class="nav-link {{ request()->routeIs('kasir.notifications.history') ? 'active' : '' }}">
+                <i class="bi bi-bell"></i> Riwayat Notifikasi
+            </a>
         @endif
     </nav>
 
@@ -475,7 +479,7 @@
                 @endforelse
             </div>
             <div class="text-center border-top py-2">
-                <a href="{{ route('owner.notifications.history') }}" class="small text-decoration-none">
+                <a href="{{ route(session('role') . '.notifications.history') }}" class="small text-decoration-none">
                     Lihat semua notifikasi
                 </a>
             </div>

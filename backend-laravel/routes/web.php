@@ -63,4 +63,8 @@ Route::middleware(['auth', 'role:kasir'])->prefix('kasir')->name('kasir.')->grou
     Route::post('/shift/close',  [KasirWebController::class, 'closeShift'])->name('shift.close');
 
     Route::get('/transactions',  [KasirWebController::class, 'transactions'])->name('transactions');
+
+    Route::get('/notifications',                [NotificationWebController::class, 'history'])->name('notifications.history');
+    Route::post('/notifications/{notification}/read', [NotificationWebController::class, 'markRead'])->name('notifications.read');
+    Route::delete('/notifications/{notification}',    [NotificationWebController::class, 'destroy'])->name('notifications.destroy');
 });
