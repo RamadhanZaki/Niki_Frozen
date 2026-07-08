@@ -8,7 +8,7 @@ use App\Http\Controllers\Web\NotificationWebController;
 
 // ─── Auth ───────────────────────────────────────────
 Route::get('/',        [AuthWebController::class, 'showLogin'])->name('login');
-Route::post('/login',  [AuthWebController::class, 'login']);
+Route::post('/login',  [AuthWebController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
 
 // ─── Notifikasi (dipakai baik oleh Owner maupun Kasir) ──
