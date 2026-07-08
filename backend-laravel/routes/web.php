@@ -14,6 +14,7 @@ Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
 // ─── Notifikasi (dipakai baik oleh Owner maupun Kasir) ──
 Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationWebController::class, 'markAllRead'])->name('notifications.readAll');
+    Route::get('/notifications/poll',      [NotificationWebController::class, 'poll'])->name('notifications.poll');
 });
 
 // ─── Owner ──────────────────────────────────────────

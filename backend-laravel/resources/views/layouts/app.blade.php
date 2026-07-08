@@ -448,36 +448,32 @@
     @endphp
 
     <div class="dropdown">
-        <a href="#" class="topbar-badge position-relative" data-bs-toggle="dropdown" aria-expanded="false">
+        <a href="#" id="notif-bell" class="topbar-badge position-relative" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-bell" style="font-size:.9rem;"></i>
-            @if($unreadCount > 0)
-                <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
-                      style="font-size:.55rem; padding:3px 5px;">
-                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
-                </span>
-            @endif
+            <span id="notif-badge-count"
+                  class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
+                  style="font-size:.55rem; padding:3px 5px; {{ $unreadCount > 0 ? '' : 'display:none;' }}">
+                {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+            </span>
         </a>
         <div class="dropdown-menu dropdown-menu-end p-0" style="width:320px; max-height:400px; overflow-y:auto;">
             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                 <span class="fw-semibold small">Notifikasi</span>
-                @if($unreadCount > 0)
-                    <form method="POST" action="{{ route('notifications.readAll') }}">
-                        @csrf
-                        <button type="submit" class="btn btn-link btn-sm p-0" style="font-size:.75rem;">
-                            Tandai semua dibaca
-                        </button>
-                    </form>
-                @endif
+                <button type="button" id="notif-mark-all" class="btn btn-link btn-sm p-0" style="font-size:.75rem; {{ $unreadCount > 0 ? '' : 'display:none;' }}">
+                    Tandai semua dibaca
+                </button>
             </div>
-            @forelse($unreadNotifications as $notif)
-                <div class="px-3 py-2 border-bottom small">
-                    <div class="fw-semibold">{{ $notif->data['title'] ?? 'Notifikasi' }}</div>
-                    <div class="text-muted" style="font-size:.75rem;">{{ $notif->data['message'] ?? '' }}</div>
-                    <div class="text-muted" style="font-size:.7rem;">{{ $notif->created_at->diffForHumans() }}</div>
-                </div>
-            @empty
-                <div class="px-3 py-4 text-center text-muted small">Tidak ada notifikasi baru</div>
-            @endforelse
+            <div id="notif-list">
+                @forelse($unreadNotifications as $notif)
+                    <div class="px-3 py-2 border-bottom small">
+                        <div class="fw-semibold">{{ $notif->data['title'] ?? 'Notifikasi' }}</div>
+                        <div class="text-muted" style="font-size:.75rem;">{{ $notif->data['message'] ?? '' }}</div>
+                        <div class="text-muted" style="font-size:.7rem;">{{ $notif->created_at->diffForHumans() }}</div>
+                    </div>
+                @empty
+                    <div class="px-3 py-4 text-center text-muted small" id="notif-empty">Tidak ada notifikasi baru</div>
+                @endforelse
+            </div>
             <div class="text-center border-top py-2">
                 <a href="{{ route('owner.notifications.history') }}" class="small text-decoration-none">
                     Lihat semua notifikasi
@@ -569,6 +565,133 @@
     );
     overlay.addEventListener('click', closeSidebar);
 </script>
+
+@auth
+<script>
+    /**
+     * Polling ringan untuk notifikasi real-time (badge lonceng Owner/Kasir).
+     * Tidak pakai WebSocket/Pusher/Reverb — cukup fetch() ke endpoint
+     * /notifications/poll setiap POLL_INTERVAL_MS. Ini dipilih karena volume
+     * notifikasi toko frozen food (transaksi QRIS, selisih kas) rendah,
+     * jadi delay beberapa detik dari polling tidak masalah dan jauh lebih
+     * sederhana untuk dijalankan tanpa infrastruktur tambahan (server WebSocket,
+     * queue worker, dsb) di hosting seadanya seperti Railway/XAMPP.
+     */
+    (function () {
+        const POLL_INTERVAL_MS = 15000; // 15 detik — cukup terasa "real-time" tanpa membebani server
+        const pollUrl   = @json(route('notifications.poll'));
+        const readAllUrl = @json(route('notifications.readAll'));
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+        const badgeEl    = document.getElementById('notif-badge-count');
+        const listEl     = document.getElementById('notif-list');
+        const markAllBtn = document.getElementById('notif-mark-all');
+
+        let lastSeenId = null;   // ID notifikasi terbaru yang sudah "diketahui" (untuk deteksi notifikasi baru)
+        let isFirstPoll = true;  // supaya toast tidak muncul untuk notifikasi lama saat page pertama kali load
+        let pollTimer   = null;
+
+        function renderList(notifications) {
+            if (!notifications.length) {
+                listEl.innerHTML = '<div class="px-3 py-4 text-center text-muted small">Tidak ada notifikasi baru</div>';
+                return;
+            }
+            listEl.innerHTML = notifications.map(n => `
+                <div class="px-3 py-2 border-bottom small">
+                    <div class="fw-semibold">${escapeHtml(n.title)}</div>
+                    <div class="text-muted" style="font-size:.75rem;">${escapeHtml(n.message)}</div>
+                    <div class="text-muted" style="font-size:.7rem;">${escapeHtml(n.created_at)}</div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str ?? '';
+            return div.innerHTML;
+        }
+
+        function updateBadge(count) {
+            if (count > 0) {
+                badgeEl.textContent = count > 9 ? '9+' : count;
+                badgeEl.style.display = '';
+                markAllBtn.style.display = '';
+            } else {
+                badgeEl.style.display = 'none';
+                markAllBtn.style.display = 'none';
+            }
+        }
+
+        function showToast(notif) {
+            if (typeof Swal === 'undefined') return;
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: notif.title,
+                text: notif.message,
+                showConfirmButton: false,
+                timer: 6000,
+                timerProgressBar: true,
+            });
+        }
+
+        async function poll() {
+            // Jangan polling kalau tab sedang tidak aktif/di-minimize — hemat
+            // request, dan begitu tab aktif lagi ada listener terpisah di
+            // bawah yang langsung polling ulang supaya tetap terasa real-time.
+            if (document.visibilityState !== 'visible') return;
+
+            try {
+                const res = await fetch(pollUrl, {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (!res.ok) return;
+
+                const data = await res.json();
+                updateBadge(data.unread_count);
+                renderList(data.notifications);
+
+                const newestId = data.notifications[0]?.id ?? null;
+
+                if (!isFirstPoll && newestId && newestId !== lastSeenId) {
+                    showToast(data.notifications[0]);
+                }
+
+                if (newestId) lastSeenId = newestId;
+                isFirstPoll = false;
+            } catch (e) {
+                // Diam-diam gagal (mis. koneksi putus sesaat) — polling
+                // berikutnya akan coba lagi otomatis, tidak perlu ganggu user.
+            }
+        }
+
+        markAllBtn?.addEventListener('click', async () => {
+            try {
+                await fetch(readAllUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                });
+            } finally {
+                poll(); // langsung refresh badge & dropdown ke kondisi "0 unread"
+            }
+        });
+
+        // Polling langsung sesaat setelah page load, lalu berkala.
+        poll();
+        pollTimer = setInterval(poll, POLL_INTERVAL_MS);
+
+        // Begitu user kembali ke tab ini, langsung poll ulang supaya tidak
+        // perlu menunggu interval berikutnya untuk lihat notifikasi terbaru.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') poll();
+        });
+    })();
+</script>
+@endauth
 
 @stack('scripts')
 </body>

@@ -15,6 +15,37 @@ class NotificationWebController extends Controller
     }
 
     /**
+     * Endpoint polling ringan dipanggil dari JS setiap beberapa detik
+     * (lihat layouts/app.blade.php) supaya badge & dropdown lonceng ter-update
+     * tanpa reload manual — tanpa perlu WebSocket/Pusher/Reverb. Owner (atau
+     * siapa pun yang login) cukup diam di dashboard, notifikasi baru (QRIS
+     * masuk, selisih kas shift) otomatis muncul dalam beberapa detik.
+     */
+    public function poll(Request $request)
+    {
+        $user = $request->user();
+
+        $unreadCount = $user->unreadNotifications()->count();
+
+        $notifications = $user->unreadNotifications()
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn ($n) => [
+                'id'         => $n->id,
+                'title'      => $n->data['title'] ?? 'Notifikasi',
+                'message'    => $n->data['message'] ?? '',
+                'created_at' => $n->created_at->diffForHumans(),
+            ])
+            ->values();
+
+        return response()->json([
+            'unread_count'  => $unreadCount,
+            'notifications' => $notifications,
+        ]);
+    }
+
+    /**
      * Halaman riwayat notifikasi Owner: menampilkan seluruh notifikasi
      * (baik yang sudah maupun belum dibaca), bisa difilter statusnya,
      * dan diurutkan dari yang terbaru.
