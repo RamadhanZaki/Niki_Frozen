@@ -12,7 +12,9 @@ class Transaction extends Model
         'user_id',
         'branch_id',
         'shift_id',
+        'discount_code_id',
         'subtotal',
+        'discount_amount',
         'tax_amount',
         'rounding_amount',
         'total',
@@ -28,6 +30,7 @@ class Transaction extends Model
     {
         return [
             'subtotal'        => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'tax_amount'      => 'decimal:2',
             'rounding_amount' => 'decimal:2',
             'total'           => 'decimal:2',
@@ -35,6 +38,11 @@ class Transaction extends Model
             'change_amount' => 'decimal:2',
             'synced_at'     => 'datetime',
         ];
+    }
+
+    public function discountCode()
+    {
+        return $this->belongsTo(DiscountCode::class);
     }
 
     public function user()

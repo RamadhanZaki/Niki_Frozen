@@ -12,6 +12,7 @@ use App\Models\Shift;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
+use App\Models\DiscountCode;
 use App\Notifications\PasswordResetByOwnerNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -445,6 +446,114 @@ class OwnerWebController extends Controller
         }
 
         return redirect()->route('owner.settings')->with('success', 'Pengaturan berhasil disimpan.');
+    }
+
+    // ─── Kode Diskon ────────────────────────────────────────────────
+    public function discounts()
+    {
+        $discounts = DiscountCode::with('branch')->latest()->get();
+        $branches  = Branch::orderBy('name')->get();
+
+        return view('owner.discounts', compact('discounts', 'branches'));
+    }
+
+    /**
+     * Rule validasi bersama untuk store & update, supaya aturan bisnis
+     * (mis. max_discount hanya untuk percentage, valid_until harus setelah
+     * valid_from) tidak drift antara dua method.
+     */
+    private function discountValidationRules(?int $ignoreId = null): array
+    {
+        return [
+            'code'         => [
+                'required', 'string', 'max:30', 'alpha_dash',
+                Rule::unique('discount_codes', 'code')->ignore($ignoreId),
+            ],
+            'type'         => 'required|in:percentage,fixed',
+            'value'        => 'required|numeric|min:0.01',
+            'min_purchase' => 'nullable|numeric|min:0',
+            'max_discount' => 'nullable|numeric|min:0',
+            'quota'        => 'nullable|integer|min:1',
+            'branch_id'    => 'nullable|exists:branches,id',
+            'valid_from'   => 'required|date',
+            'valid_until'  => 'required|date|after_or_equal:valid_from',
+            'is_active'    => 'nullable|boolean',
+        ];
+    }
+
+    public function storeDiscount(Request $request)
+    {
+        $data = $request->validate($this->discountValidationRules());
+
+        if ($data['type'] === 'percentage' && (float) $data['value'] > 100) {
+            return back()->withInput()->with('error', 'Nilai diskon persen tidak boleh lebih dari 100%.');
+        }
+
+        DiscountCode::create([
+            'code'         => strtoupper($data['code']),
+            'type'         => $data['type'],
+            'value'        => $data['value'],
+            'min_purchase' => $data['min_purchase'] ?? 0,
+            'max_discount' => $data['type'] === 'percentage' ? ($data['max_discount'] ?? null) : null,
+            'quota'        => $data['quota'] ?? null,
+            'branch_id'    => $data['branch_id'] ?? null,
+            'valid_from'   => $data['valid_from'],
+            'valid_until'  => $data['valid_until'],
+            'is_active'    => $request->boolean('is_active', true),
+            'created_by'   => Auth::id(),
+        ]);
+
+        return redirect()->route('owner.discounts')->with('success', "Kode diskon {$data['code']} berhasil dibuat.");
+    }
+
+    public function updateDiscount(Request $request, DiscountCode $discount)
+    {
+        $data = $request->validate($this->discountValidationRules($discount->id));
+
+        if ($data['type'] === 'percentage' && (float) $data['value'] > 100) {
+            return back()->withInput()->with('error', 'Nilai diskon persen tidak boleh lebih dari 100%.');
+        }
+
+        // Kuota tidak boleh diturunkan sampai di bawah pemakaian yang sudah
+        // terjadi — supaya Owner tidak tidak sengaja membuat used_count lebih
+        // besar dari quota (yang bikin status "kuota_habis" jadi rancu).
+        if (!is_null($data['quota'] ?? null) && $data['quota'] < $discount->used_count) {
+            return back()->withInput()->with(
+                'error',
+                "Kuota tidak boleh kurang dari {$discount->used_count} (jumlah yang sudah terpakai)."
+            );
+        }
+
+        $discount->update([
+            'code'         => strtoupper($data['code']),
+            'type'         => $data['type'],
+            'value'        => $data['value'],
+            'min_purchase' => $data['min_purchase'] ?? 0,
+            'max_discount' => $data['type'] === 'percentage' ? ($data['max_discount'] ?? null) : null,
+            'quota'        => $data['quota'] ?? null,
+            'branch_id'    => $data['branch_id'] ?? null,
+            'valid_from'   => $data['valid_from'],
+            'valid_until'  => $data['valid_until'],
+            'is_active'    => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->route('owner.discounts')->with('success', "Kode diskon {$data['code']} berhasil diperbarui.");
+    }
+
+    public function destroyDiscount(DiscountCode $discount)
+    {
+        // Dipertahankan kalau sudah pernah dipakai transaksi, supaya riwayat
+        // transaksi lama tetap bisa menampilkan kode diskon apa yang dipakai
+        // (foreign key discount_code_id di transactions pakai nullOnDelete,
+        // jadi secara teknis TETAP bisa dihapus, tapi kita larang untuk
+        // menjaga jejak audit tetap utuh selama masih dipakai).
+        if ($discount->transactions()->exists()) {
+            return back()->with('error', 'Kode diskon tidak dapat dihapus karena sudah pernah dipakai di transaksi.');
+        }
+
+        $discount->delete();
+
+        return redirect()->route('owner.discounts')->with('success', 'Kode diskon berhasil dihapus.');
     }
 
     // ─── Users (Kasir) ────────────────────────────────────────────────

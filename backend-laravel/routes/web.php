@@ -45,6 +45,11 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::get('/settings',            [OwnerWebController::class, 'settings'])->name('settings');
     Route::post('/settings',           [OwnerWebController::class, 'updateSettings'])->name('settings.update');
 
+    Route::get('/discounts',                 [OwnerWebController::class, 'discounts'])->name('discounts');
+    Route::post('/discounts',                [OwnerWebController::class, 'storeDiscount'])->name('discounts.store');
+    Route::put('/discounts/{discount}',      [OwnerWebController::class, 'updateDiscount'])->name('discounts.update');
+    Route::delete('/discounts/{discount}',   [OwnerWebController::class, 'destroyDiscount'])->name('discounts.destroy');
+
     Route::get('/users',                        [OwnerWebController::class, 'users'])->name('users');
     Route::post('/users',                       [OwnerWebController::class, 'storeUser'])->name('users.store');
     Route::put('/users/{user}',                 [OwnerWebController::class, 'updateUser'])->name('users.update');
@@ -56,6 +61,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
 Route::middleware(['auth', 'role:kasir'])->prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/pos',           [KasirWebController::class, 'pos'])->name('pos');
     Route::post('/pos/checkout', [KasirWebController::class, 'checkout'])->name('pos.checkout');
+    Route::post('/pos/apply-discount', [KasirWebController::class, 'applyDiscount'])->name('pos.applyDiscount');
     Route::get('/pos/receipt/{transaction}', [KasirWebController::class, 'receipt'])->name('pos.receipt');
 
     Route::get('/shift',         [KasirWebController::class, 'shift'])->name('shift');

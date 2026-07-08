@@ -86,6 +86,28 @@
                     <span class="text-muted small">Subtotal</span>
                     <span class="small" id="cartSubtotal">Rp 0</span>
                 </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold mb-1">Kode Diskon</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="discountCodeInput" class="form-control"
+                               placeholder="Contoh: PROMO10" style="text-transform:uppercase;">
+                        <button type="button" class="btn btn-outline-primary" id="btnApplyDiscount" onclick="applyDiscountCode()">
+                            Terapkan
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" id="btnRemoveDiscount"
+                                style="display:none;" onclick="removeDiscountCode()" title="Batalkan diskon">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div id="discountAppliedInfo" class="small text-success mt-1" style="display:none;"></div>
+                </div>
+
+                <div class="d-flex justify-content-between mb-1" id="cartDiscountRow" style="display:none;">
+                    <span class="text-muted small">Diskon</span>
+                    <span class="small text-success" id="cartDiscount">- Rp 0</span>
+                </div>
+
                 @if($taxPercent > 0)
                 <div class="d-flex justify-content-between mb-1">
                     <span class="text-muted small">Pajak ({{ rtrim(rtrim(number_format($taxPercent, 2, ',', '.'), '0'), ',') }}%)</span>
@@ -139,11 +161,15 @@
 <script>
     let cart = []; // [{id, name, price, stock, qty}]
     let paymentMethod = 'cash'; // 'cash' | 'qris'
+    let appliedDiscount = null; // { code, discount_amount } | null
     const TAX_PERCENT = {{ (float) $taxPercent }};
 
-    // Hitung subtotal (pra-pajak), nominal pajak, dan total akhir yang harus
-    // dibayar. Perhitungan final tetap dilakukan ulang di server (checkout()),
-    // ini hanya untuk tampilan & validasi awal di sisi kasir.
+    // Hitung subtotal (pra-pajak), diskon, nominal pajak, dan total akhir yang
+    // harus dibayar. Perhitungan final tetap dilakukan ulang di server
+    // (checkout()), ini hanya untuk tampilan & validasi awal di sisi kasir.
+    //
+    // Diskon dipotong dari subtotal SEBELUM pajak dihitung — konsisten dengan
+    // logic di server (KasirWebController::checkout()).
     //
     // Untuk Tunai, total dibulatkan ke kelipatan Rp500 terdekat (sama seperti
     // di server) supaya kasir tidak perlu menghitung kembalian recehan hasil
@@ -151,11 +177,13 @@
     // presisi karena nominal digital tidak masalah dibayar berapa pun.
     function calcTotals() {
         const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-        const tax      = Math.round(subtotal * TAX_PERCENT / 100);
-        const preRound = subtotal + tax;
+        const discount = appliedDiscount ? Math.min(appliedDiscount.discount_amount, subtotal) : 0;
+        const taxableBase = subtotal - discount;
+        const tax      = Math.round(taxableBase * TAX_PERCENT / 100);
+        const preRound = taxableBase + tax;
         const grandTotal = paymentMethod === 'cash' ? Math.round(preRound / 500) * 500 : preRound;
         const rounding = grandTotal - preRound;
-        return { subtotal, tax, rounding, grandTotal };
+        return { subtotal, discount, tax, rounding, grandTotal };
     }
 
     function selectPaymentMethod(method) {
@@ -219,6 +247,7 @@
         } else {
             cart.push({ ...product, qty: 1 });
         }
+        invalidateDiscountIfCartChanged();
         renderCart();
     }
 
@@ -232,11 +261,13 @@
             item.qty = item.stock;
             alert('Stok tidak cukup.');
         }
+        invalidateDiscountIfCartChanged();
         renderCart();
     }
 
     function removeFromCart(id) {
         cart = cart.filter(i => i.id !== id);
+        invalidateDiscountIfCartChanged();
         renderCart();
     }
 
@@ -282,12 +313,22 @@
     }
 
     function updateTotals() {
-        const { subtotal, tax, rounding, grandTotal } = calcTotals();
+        const { subtotal, discount, tax, rounding, grandTotal } = calcTotals();
 
         document.getElementById('cartSubtotal').textContent = formatRp(subtotal);
         const taxEl = document.getElementById('cartTax');
         if (taxEl) taxEl.textContent = formatRp(tax);
         document.getElementById('cartTotal').textContent = formatRp(grandTotal);
+
+        // Baris "Diskon" cuma muncul kalau ada kode diskon yang diterapkan.
+        const discountRow = document.getElementById('cartDiscountRow');
+        const discountEl  = document.getElementById('cartDiscount');
+        if (discount > 0) {
+            discountRow.style.display = 'flex';
+            discountEl.textContent = '- ' + formatRp(discount);
+        } else {
+            discountRow.style.display = 'none';
+        }
 
         // Baris "Pembulatan" hanya muncul kalau ada selisih pembulatan (Tunai +
         // hasilnya bukan kelipatan Rp500 pas sebelum dibulatkan).
@@ -307,6 +348,89 @@
         const payment = getPaymentValue();
         const change  = payment - grandTotal;
         document.getElementById('cartChange').textContent = formatRp(change > 0 ? change : 0);
+    }
+
+    // ── Kode Diskon ──────────────────────────────────────────────────
+    const APPLY_DISCOUNT_URL = "{{ route('kasir.pos.applyDiscount') }}";
+
+    async function applyDiscountCode() {
+        const codeInput = document.getElementById('discountCodeInput');
+        const code = codeInput.value.trim();
+        if (!code) return;
+
+        const { subtotal } = calcTotals();
+        if (subtotal <= 0) {
+            Swal.fire({ icon: 'warning', title: 'Keranjang masih kosong', text: 'Tambahkan produk dulu sebelum menerapkan kode diskon.' });
+            return;
+        }
+
+        const btn = document.getElementById('btnApplyDiscount');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(APPLY_DISCOUNT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ code, subtotal }),
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Kode diskon tidak valid.');
+            }
+
+            appliedDiscount = { code: data.code, discount_amount: data.discount_amount };
+
+            const info = document.getElementById('discountAppliedInfo');
+            info.textContent = `Kode "${data.code}" diterapkan — potongan ${formatRp(data.discount_amount)}`;
+            info.style.display = 'block';
+
+            codeInput.disabled = true;
+            btn.style.display = 'none';
+            document.getElementById('btnRemoveDiscount').style.display = 'inline-block';
+
+            updateTotals();
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Kode diskon gagal diterapkan', text: err.message });
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function removeDiscountCode() {
+        appliedDiscount = null;
+
+        const codeInput = document.getElementById('discountCodeInput');
+        codeInput.value = '';
+        codeInput.disabled = false;
+
+        document.getElementById('discountAppliedInfo').style.display = 'none';
+        document.getElementById('btnRemoveDiscount').style.display = 'none';
+        document.getElementById('btnApplyDiscount').style.display = 'inline-block';
+
+        updateTotals();
+    }
+
+    // Kode diskon yang sudah diterapkan dihitung berdasarkan subtotal SAAT itu.
+    // Kalau isi keranjang berubah setelahnya, potongan yang ditampilkan jadi
+    // tidak akurat lagi — jadi otomatis dibatalkan dan kasir diminta menerapkan
+    // ulang. Server tetap jadi sumber kebenaran akhir di checkout() apa pun
+    // yang terjadi di sisi tampilan ini.
+    function invalidateDiscountIfCartChanged() {
+        if (appliedDiscount) {
+            removeDiscountCode();
+            Swal.fire({
+                icon: 'info',
+                title: 'Diskon dibatalkan',
+                text: 'Keranjang berubah, silakan terapkan ulang kode diskon jika masih ingin dipakai.',
+                timer: 4000,
+                showConfirmButton: false,
+            });
+        }
     }
 
     document.getElementById('paymentInput').addEventListener('input', function () {
@@ -479,6 +603,7 @@
             items: cart.map(i => ({ id: i.id, qty: i.qty })),
             payment: payment,
             payment_method: paymentMethod,
+            discount_code: appliedDiscount ? appliedDiscount.code : null,
         };
 
         const btn = document.getElementById('btnCheckout');
@@ -510,6 +635,7 @@
                 document.getElementById('paymentInput').disabled = false;
                 document.getElementById('pmCash').checked = true;
                 paymentMethod = 'cash';
+                removeDiscountCode();
                 Swal.fire({
                     icon: 'warning',
                     title: 'Tersimpan offline',

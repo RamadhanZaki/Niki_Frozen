@@ -19,11 +19,11 @@
 
         <div class="d-flex align-items-center gap-2">
             <div class="btn-group btn-group-sm" role="group">
-                <a href="{{ route(session('role') . '.notifications.history', ['status' => 'all']) }}"
+                <a href="{{ route(auth()->user()->role . '.notifications.history', ['status' => 'all']) }}"
                    class="btn btn-outline-secondary {{ $status === 'all' ? 'active' : '' }}">Semua</a>
-                <a href="{{ route(session('role') . '.notifications.history', ['status' => 'unread']) }}"
+                <a href="{{ route(auth()->user()->role . '.notifications.history', ['status' => 'unread']) }}"
                    class="btn btn-outline-secondary {{ $status === 'unread' ? 'active' : '' }}">Belum Dibaca</a>
-                <a href="{{ route(session('role') . '.notifications.history', ['status' => 'read']) }}"
+                <a href="{{ route(auth()->user()->role . '.notifications.history', ['status' => 'read']) }}"
                    class="btn btn-outline-secondary {{ $status === 'read' ? 'active' : '' }}">Sudah Dibaca</a>
             </div>
 
@@ -70,14 +70,14 @@
                         <td class="text-end">
                             <div class="d-flex justify-content-end gap-1">
                                 @if(is_null($notif->read_at))
-                                    <form method="POST" action="{{ route(session('role') . '.notifications.read', $notif->id) }}">
+                                    <form method="POST" action="{{ route(auth()->user()->role . '.notifications.read', $notif->id) }}">
                                         @csrf
                                         <button type="submit" class="btn btn-sm btn-outline-primary" title="Tandai dibaca">
                                             <i class="bi bi-check2"></i>
                                         </button>
                                     </form>
                                 @endif
-                                <form method="POST" action="{{ route(session('role') . '.notifications.destroy', $notif->id) }}"
+                                <form method="POST" action="{{ route(auth()->user()->role . '.notifications.destroy', $notif->id) }}"
                                       onsubmit="return confirm('Hapus notifikasi ini?');">
                                     @csrf
                                     @method('DELETE')

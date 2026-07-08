@@ -347,7 +347,7 @@
     </a>
 
     <nav class="sidebar-nav">
-        @if(session('role') === 'owner')
+        @if(auth()->user()->role === 'owner')
             <div class="nav-label">Utama</div>
             <a href="{{ route('owner.dashboard') }}"
                class="nav-link {{ request()->routeIs('owner.dashboard') ? 'active' : '' }}">
@@ -362,6 +362,10 @@
             <a href="{{ route('owner.stocks') }}"
                class="nav-link {{ request()->routeIs('owner.stocks') ? 'active' : '' }}">
                 <i class="bi bi-archive"></i> Stok
+            </a>
+            <a href="{{ route('owner.discounts') }}"
+               class="nav-link {{ request()->routeIs('owner.discounts') ? 'active' : '' }}">
+                <i class="bi bi-ticket-perforated"></i> Kode Diskon
             </a>
             <a href="{{ route('owner.branches') }}"
                class="nav-link {{ request()->routeIs('owner.branches') ? 'active' : '' }}">
@@ -390,7 +394,7 @@
                 <i class="bi bi-gear"></i> Pengaturan
             </a>
 
-        @elseif(session('role') === 'kasir')
+        @elseif(auth()->user()->role === 'kasir')
             <div class="nav-label">Kasir</div>
             <a href="{{ route('kasir.pos') }}"
                class="nav-link {{ request()->routeIs('kasir.pos') ? 'active' : '' }}">
@@ -479,7 +483,7 @@
                 @endforelse
             </div>
             <div class="text-center border-top py-2">
-                <a href="{{ route(session('role') . '.notifications.history') }}" class="small text-decoration-none">
+                <a href="{{ route(auth()->user()->role . '.notifications.history') }}" class="small text-decoration-none">
                     Lihat semua notifikasi
                 </a>
             </div>

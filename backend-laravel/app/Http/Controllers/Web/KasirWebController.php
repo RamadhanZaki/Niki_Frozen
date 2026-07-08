@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\DiscountCode;
 use App\Models\InvoiceCounter;
 use App\Models\Product;
 use App\Models\Setting;
@@ -41,6 +42,47 @@ class KasirWebController extends Controller
         return view('kasir.pos', compact('products', 'shift', 'taxPercent'));
     }
 
+    /**
+     * Preview kode diskon SEBELUM pembayaran — dipanggil dari JS saat kasir
+     * klik "Terapkan" di POS. Ini HANYA preview: tidak menambah used_count
+     * dan tidak mengunci baris apa pun (lock=false), karena tidak ada state
+     * yang diubah di sini.
+     *
+     * Subtotal di sini dipercaya dari client (dihitung dari isi keranjang di
+     * browser) — ini aman karena cuma dipakai untuk MENAMPILKAN estimasi
+     * potongan, bukan keputusan final. Begitu kasir benar-benar checkout(),
+     * subtotal dihitung ULANG di server dari harga produk yang sesungguhnya
+     * (bukan dari input client) dan kode diskon divalidasi ULANG dari nol —
+     * jadi kasir tidak bisa memanipulasi subtotal di sini untuk dapat
+     * potongan lebih besar dari seharusnya.
+     */
+    public function applyDiscount(Request $request)
+    {
+        $request->validate([
+            'code'     => 'required|string|max:30',
+            'subtotal' => 'required|numeric|min:0.01',
+        ]);
+
+        try {
+            $discount = DiscountCode::validateForCheckout(
+                $request->code,
+                (float) $request->subtotal,
+                session('branch_id')
+            );
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        $discountAmount = $discount->calculateDiscountAmount((float) $request->subtotal);
+
+        return response()->json([
+            'success'         => true,
+            'code'            => $discount->code,
+            'discount_amount' => $discountAmount,
+            'message'         => "Kode diskon {$discount->code} berhasil diterapkan.",
+        ]);
+    }
+
     public function checkout(Request $request)
     {
         $wantsJson = $request->wantsJson() || $request->ajax();
@@ -51,6 +93,7 @@ class KasirWebController extends Controller
             'items.*.qty'       => 'required|integer|min:1',
             'payment'           => 'required|numeric|min:0',
             'payment_method'    => 'required|in:cash,qris',
+            'discount_code'     => 'nullable|string|max:30',
             // Dikirim oleh JS kasir (dibuat di browser). Dipakai untuk mencegah
             // transaksi tersimpan dobel kalau request sync offline dikirim ulang.
             'client_txn_id'     => 'nullable|string|max:64',
@@ -134,12 +177,38 @@ class KasirWebController extends Controller
                     ];
                 }
 
+                // ── Kode Diskon (opsional) ──────────────────────────────────
+                // Divalidasi ULANG dari nol di sini (bukan cuma percaya hasil
+                // preview applyDiscount()) — kasir bisa saja klik "Terapkan"
+                // lalu menunggu lama sebelum bayar, di mana kode diskon bisa
+                // saja sudah kadaluarsa/nonaktif/kuota habis di antara waktu itu.
+                // lock=true supaya baris discount_codes dikunci DI DALAM
+                // transaction ini sebelum used_count ditambah — pola yang sama
+                // persis dengan lockForUpdate() pada Stock di atas, mencegah dua
+                // kasir sama-sama lolos validasi "kuota tersisa 1" dari data basi.
+                $discountCode   = null;
+                $discountAmount = 0;
+
+                if ($request->filled('discount_code')) {
+                    $discountCode = DiscountCode::validateForCheckout(
+                        $request->discount_code,
+                        $total,
+                        session('branch_id'),
+                        lock: true
+                    );
+                    $discountAmount = $discountCode->calculateDiscountAmount($total);
+                }
+
                 // ── Pajak (diatur Owner lewat halaman Settings) ──
-                // 'total' (dan seluruh akumulasi omzet turunan lain di bawah)
-                // sengaja dihitung SETELAH pajak, karena itulah nominal yang
-                // benar-benar diterima kasir dari customer.
-                $taxAmount    = round($total * $taxPercent / 100);
-                $preRoundTotal = $total + $taxAmount;
+                // Dihitung dari subtotal SETELAH dipotong diskon — supaya kalau
+                // ada diskon, customer tidak membayar pajak atas nominal yang
+                // sudah tidak perlu ia bayar. 'total' (dan seluruh akumulasi
+                // omzet turunan lain di bawah) sengaja dihitung SETELAH pajak,
+                // karena itulah nominal yang benar-benar diterima kasir dari
+                // customer.
+                $taxableBase  = $total - $discountAmount;
+                $taxAmount    = round($taxableBase * $taxPercent / 100);
+                $preRoundTotal = $taxableBase + $taxAmount;
 
                 // ── Pembulatan kembalian (khusus Tunai) ──
                 // Pajak sering menghasilkan angka receh (mis. Rp250/Rp750) yang
@@ -164,7 +233,9 @@ class KasirWebController extends Controller
                     'user_id'          => Auth::id(),
                     'branch_id'        => session('branch_id'),
                     'shift_id'         => $shift->id,
+                    'discount_code_id' => $discountCode?->id,
                     'subtotal'         => $total,
+                    'discount_amount'  => $discountAmount,
                     'tax_amount'       => $taxAmount,
                     'rounding_amount'  => $roundingAmount,
                     'total'            => $grandTotal,
@@ -178,6 +249,12 @@ class KasirWebController extends Controller
                     'sync_status'      => 'tersinkronisasi',
                     'synced_at'        => now(),
                 ]);
+
+                // Baris kode diskon sudah dikunci (lockForUpdate) di atas sejak
+                // sebelum perhitungan pajak, jadi increment ini aman dari race
+                // condition walau ada banyak checkout paralel memakai kode yang
+                // sama dengan kuota tersisa sedikit.
+                $discountCode?->increment('used_count');
 
                 foreach ($cartData as $row) {
                     TransactionDetail::create([
