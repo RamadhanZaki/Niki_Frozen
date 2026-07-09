@@ -70,6 +70,9 @@ Route::middleware(['auth', 'role:kasir'])->prefix('kasir')->name('kasir.')->grou
 
     Route::get('/transactions',  [KasirWebController::class, 'transactions'])->name('transactions');
 
+    Route::get('/settings',       [KasirWebController::class, 'settings'])->name('settings');
+    Route::put('/settings',       [KasirWebController::class, 'updateSettings'])->name('settings.update');
+
     Route::get('/notifications',                [NotificationWebController::class, 'history'])->name('notifications.history');
     Route::post('/notifications/{notification}/read', [NotificationWebController::class, 'markRead'])->name('notifications.read');
     Route::delete('/notifications/{notification}',    [NotificationWebController::class, 'destroy'])->name('notifications.destroy');

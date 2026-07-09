@@ -342,7 +342,7 @@
         <div class="brand-icon"><i class="bi bi-snow2"></i></div>
         <div class="brand-text">
             <strong>Niki Frozen</strong>
-            <span>{{ session('role', 'sistem') }}</span>
+            <span>{{ auth()->user()->role ?? 'sistem' }}</span>
         </div>
     </a>
 
@@ -412,15 +412,19 @@
                class="nav-link {{ request()->routeIs('kasir.notifications.history') ? 'active' : '' }}">
                 <i class="bi bi-bell"></i> Riwayat Notifikasi
             </a>
+            <a href="{{ route('kasir.settings') }}"
+               class="nav-link {{ request()->routeIs('kasir.settings') ? 'active' : '' }}">
+                <i class="bi bi-gear"></i> Pengaturan Akun
+            </a>
         @endif
     </nav>
 
     <div class="sidebar-footer">
         <div class="user-info">
-            <div class="user-avatar">{{ strtoupper(substr(session('name', 'U'), 0, 1)) }}</div>
+            <div class="user-avatar">{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}</div>
             <div>
-                <div class="user-name">{{ session('name', 'Pengguna') }}</div>
-                <div class="user-role">{{ session('role', '-') }}</div>
+                <div class="user-name">{{ auth()->user()->name ?? 'Pengguna' }}</div>
+                <div class="user-role">{{ auth()->user()->role ?? '-' }}</div>
             </div>
         </div>
         <form method="POST" action="{{ route('logout') }}">

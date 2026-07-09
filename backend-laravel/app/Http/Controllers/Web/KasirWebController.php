@@ -17,7 +17,10 @@ use App\Notifications\QrisPaymentNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class KasirWebController extends Controller
 {
@@ -479,5 +482,52 @@ class KasirWebController extends Controller
             ->latest()->paginate(15);
 
         return view('kasir.transactions', compact('transactions'));
+    }
+
+    public function settings()
+    {
+        return view('kasir.settings');
+    }
+
+    /**
+     * Update profil kasir (nama, email, & opsional password). Password
+     * dibiarkan kosong kalau kasir tidak ingin menggantinya — cuma nama/email
+     * yang berubah kalau field password tidak diisi.
+     *
+     * Setelah berhasil, halaman menampilkan pop-up konfirmasi lalu MEMAKSA
+     * logout begitu kasir menekan OK (lihat kasir/settings.blade.php) —
+     * supaya kasir login ulang dengan kredensial barunya dan sesi lama yang
+     * mungkin masih dipakai di device lain otomatis tidak valid lagi
+     * (session di-invalidate saat logout, bukan cuma redirect kosong).
+     */
+    public function updateSettings(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name'     => 'required|string|max:100',
+            'email'    => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            // Password sepenuhnya opsional. Kalau diisi, wajib penuhi semua
+            // aturan kompleksitas (min 8 karakter, huruf besar+kecil, angka,
+            // simbol) dan wajib sama dengan password_confirmation.
+            'password' => [
+                'nullable',
+                'confirmed',
+                Password::min(8)->mixedCase()->numbers()->symbols(),
+            ],
+        ], [
+            'password.confirmed' => 'Konfirmasi password tidak sama dengan password baru.',
+        ]);
+
+        $user->name  = $request->name;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return back()->with('profile_updated', true);
     }
 }
