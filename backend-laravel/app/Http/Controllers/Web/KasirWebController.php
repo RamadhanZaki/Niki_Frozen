@@ -394,7 +394,7 @@ class KasirWebController extends Controller
         // Kasir cuma boleh lihat struk transaksinya sendiri.
         abort_unless($transaction->user_id === Auth::id(), 403);
 
-        $transaction->load('details.product', 'user', 'branch');
+        $transaction->load('details.product', 'user', 'branch', 'discountCode');
 
         return view('kasir.receipt', compact('transaction'));
     }
@@ -477,7 +477,7 @@ class KasirWebController extends Controller
 
     public function transactions()
     {
-        $transactions = Transaction::with('details.product')
+        $transactions = Transaction::with('details.product', 'discountCode')
             ->where('user_id', Auth::id())
             ->latest()->paginate(15);
 

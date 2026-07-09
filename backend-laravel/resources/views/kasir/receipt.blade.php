@@ -96,11 +96,19 @@
         <hr>
 
         <div class="totals">
-            @if((float) $transaction->tax_amount > 0)
+            @if((float) $transaction->tax_amount > 0 || (float) $transaction->discount_amount > 0)
             <div class="row">
                 <span>Subtotal</span>
                 <span>Rp {{ number_format($transaction->subtotal, 0, ',', '.') }}</span>
             </div>
+            @endif
+            @if((float) $transaction->discount_amount > 0)
+            <div class="row">
+                <span>Diskon{{ $transaction->discountCode ? ' ('.$transaction->discountCode->code.')' : '' }}</span>
+                <span>- Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
+            </div>
+            @endif
+            @if((float) $transaction->tax_amount > 0)
             <div class="row">
                 <span>Pajak</span>
                 <span>Rp {{ number_format($transaction->tax_amount, 0, ',', '.') }}</span>

@@ -318,6 +318,25 @@ class OwnerWebController extends Controller
         $summary['total_cash'] = $per_metode->get('cash')->total ?? 0;
         $summary['total_qris'] = $per_metode->get('qris')->total ?? 0;
 
+        // ── Diskon ──
+        // total_diskon: total nominal potongan yang benar-benar diberikan ke
+        // customer pada periode ini (dari kolom discount_amount transaksi,
+        // BUKAN dari discount_codes.used_count keseluruhan — supaya konsisten
+        // dengan filter tanggal start/end di atas).
+        $summary['total_diskon'] = (float) Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
+            ->sum('discount_amount');
+        $summary['transaksi_diskon'] = Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
+            ->where('discount_amount', '>', 0)
+            ->count();
+
+        $kode_diskon_terpakai = Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
+            ->whereNotNull('discount_code_id')
+            ->selectRaw('discount_code_id, COUNT(*) as jumlah_pakai, SUM(discount_amount) as total_potongan')
+            ->groupBy('discount_code_id')
+            ->orderByDesc('total_potongan')
+            ->with('discountCode')
+            ->get();
+
         $penjualan_harian_raw = Transaction::whereBetween('created_at', [$start, $end . ' 23:59:59'])
             ->selectRaw('DATE(created_at) as tanggal, payment_method, SUM(total) as total, COUNT(*) as jumlah')
             ->groupBy('tanggal', 'payment_method')
@@ -363,7 +382,7 @@ class OwnerWebController extends Controller
         })->values();
 
         return view('owner.reports', compact(
-            'summary', 'penjualan_harian', 'produk_terlaris', 'penjualan_per_cabang', 'start', 'end'
+            'summary', 'penjualan_harian', 'produk_terlaris', 'penjualan_per_cabang', 'kode_diskon_terpakai', 'start', 'end'
         ));
     }
 

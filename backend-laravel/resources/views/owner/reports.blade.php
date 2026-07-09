@@ -63,6 +63,13 @@
             <div class="stat-label">Penjualan QRIS</div>
         </div>
     </div>
+    <div class="col-6 col-xl-4">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fdecea;color:#e63946;"><i class="bi bi-ticket-perforated"></i></div>
+            <div class="stat-value">Rp {{ number_format($summary['total_diskon'], 0, ',', '.') }}</div>
+            <div class="stat-label">Total Diskon Diberikan ({{ $summary['transaksi_diskon'] }} transaksi)</div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-3">
@@ -165,6 +172,37 @@
                     </tr>
                     @empty
                     <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada data</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{{-- Kode Diskon Terpakai --}}
+<div class="card border-0 shadow-sm mt-3">
+    <div class="card-header bg-white border-0 pt-3">
+        <span class="fw-semibold">Kode Diskon Terpakai</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kode</th>
+                        <th class="text-end">Jumlah Pakai</th>
+                        <th class="text-end">Total Potongan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($kode_diskon_terpakai as $row)
+                    <tr>
+                        <td class="small fw-semibold font-monospace">{{ $row->discountCode->code ?? 'Kode dihapus' }}</td>
+                        <td class="small text-end">{{ $row->jumlah_pakai }}</td>
+                        <td class="small text-end text-danger">- Rp {{ number_format($row->total_potongan, 0, ',', '.') }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="3" class="text-center text-muted py-4">Belum ada kode diskon yang dipakai pada periode ini</td></tr>
                     @endforelse
                 </tbody>
             </table>

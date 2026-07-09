@@ -97,6 +97,11 @@
             $t->id => [
                 'invoice' => $t->invoice_number,
                 'tanggal' => \Carbon\Carbon::parse($t->created_at)->format('d/m/Y H:i'),
+                'subtotal' => $t->subtotal,
+                'discountAmount' => (float) $t->discount_amount,
+                'discountCode' => $t->discountCode->code ?? null,
+                'taxAmount' => (float) $t->tax_amount,
+                'roundingAmount' => (float) $t->rounding_amount,
                 'total' => $t->total,
                 'paymentMethod' => $t->payment_method,
                 'payment' => $t->payment,
@@ -156,6 +161,16 @@
                     </tbody>
                 </table>
                 <hr>
+                <div class="d-flex justify-content-between"><span class="text-muted small">Subtotal</span><span class="small">${formatRp(data.subtotal)}</span></div>
+                ${data.discountAmount > 0 ? `
+                <div class="d-flex justify-content-between"><span class="text-muted small">Diskon${data.discountCode ? ` (${data.discountCode})` : ''}</span><span class="small text-success">- ${formatRp(data.discountAmount)}</span></div>
+                ` : ''}
+                ${data.taxAmount > 0 ? `
+                <div class="d-flex justify-content-between"><span class="text-muted small">Pajak</span><span class="small">${formatRp(data.taxAmount)}</span></div>
+                ` : ''}
+                ${data.roundingAmount != 0 ? `
+                <div class="d-flex justify-content-between"><span class="text-muted small">Pembulatan</span><span class="small">${data.roundingAmount > 0 ? '+' : '-'} ${formatRp(Math.abs(data.roundingAmount))}</span></div>
+                ` : ''}
                 <div class="d-flex justify-content-between"><span class="text-muted small">Total</span><span class="fw-bold">${formatRp(data.total)}</span></div>
                 <div class="d-flex justify-content-between"><span class="text-muted small">Metode Bayar</span><span class="small">${formatPaymentMethod(data.paymentMethod)}</span></div>
                 <div class="d-flex justify-content-between"><span class="text-muted small">Bayar</span><span class="small">${formatRp(data.payment)}</span></div>
