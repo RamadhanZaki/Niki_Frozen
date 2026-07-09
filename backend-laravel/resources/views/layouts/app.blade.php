@@ -431,7 +431,7 @@
                 <div class="user-role">{{ auth()->user()->role ?? '-' }}</div>
             </div>
         </div>
-        <form method="POST" action="{{ route('logout') }}">
+        <form method="POST" action="{{ route('logout') }}" id="logoutForm">
             @csrf
             <button type="submit" class="btn btn-sm w-100"
                     style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.12);border-radius:8px;">
@@ -461,6 +461,13 @@
             ? auth()->user()->unreadNotifications()->latest()->limit(5)->get()
             : collect();
         $unreadCount = auth()->check() ? auth()->user()->unreadNotifications()->count() : 0;
+
+        // Dipakai untuk pop-up peringatan "tutup shift dulu sebelum logout"
+        // di tombol Keluar sidebar. Query kecil & murah (indexed by user_id),
+        // aman dipanggil di tiap page load untuk kasir.
+        $hasOpenShift = auth()->check() && auth()->user()->role === 'kasir'
+            ? \App\Models\Shift::where('user_id', auth()->id())->whereNull('closed_at')->exists()
+            : false;
     @endphp
 
     <div class="dropdown">
@@ -583,6 +590,36 @@
 </script>
 
 @auth
+<script>
+    /**
+     * Cegah kasir logout manual selagi shift masih terbuka. Ini CUMA lapis
+     * UX (feedback instan tanpa round-trip) — validasi yang sesungguhnya
+     * tetap dilakukan di server (AuthWebController::logout()), jadi tetap
+     * aman walau JS ini di-nonaktifkan atau di-bypass.
+     */
+    (function () {
+        const hasOpenShift = @json($hasOpenShift ?? false);
+        const logoutForm = document.getElementById('logoutForm');
+        if (!hasOpenShift || !logoutForm) return;
+
+        logoutForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Shift Masih Terbuka',
+                text: 'Kamu belum menutup shift. Tutup shift terlebih dahulu sebelum logout.',
+                showCancelButton: true,
+                confirmButtonText: 'Tutup Shift Sekarang',
+                cancelButtonText: 'Batal',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = @json(route('kasir.shift'));
+                }
+            });
+        });
+    })();
+</script>
+
 <script>
     /**
      * Polling ringan untuk notifikasi real-time (badge lonceng Owner/Kasir).

@@ -75,6 +75,9 @@
      diupdate — dipicu dari tombol OK di pop-up SweetAlert di bawah. --}}
 <form method="POST" action="{{ route('logout') }}" id="forceLogoutForm" class="d-none">
     @csrf
+    {{-- Tandai ini sebagai logout demi keamanan, supaya tidak diblokir
+         validasi "shift masih terbuka" di AuthWebController::logout() --}}
+    <input type="hidden" name="reason" value="security">
 </form>
 
 @endsection
