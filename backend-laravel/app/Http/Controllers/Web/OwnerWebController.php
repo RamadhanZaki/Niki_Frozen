@@ -694,7 +694,7 @@ class OwnerWebController extends Controller
         }
 
         $request->validate([
-            'password'              => 'required|string|min:6',
+            'password'              => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
             'password_confirmation' => 'required|same:password',
         ]);
 

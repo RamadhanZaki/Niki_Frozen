@@ -190,16 +190,21 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Password Baru <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="password" name="password" id="reset_password" class="form-control" minlength="6" required>
+                            <input type="password" name="password" id="reset_password"
+                                   class="form-control @error('password') is-invalid @enderror" minlength="8" required>
                             <button type="button" class="btn btn-outline-secondary" onclick="toggleResetPassword('reset_password', this)">
                                 <i class="bi bi-eye"></i>
                             </button>
+                            @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="form-text">
+                            Minimal 8 karakter, kombinasi huruf besar, huruf kecil, angka, dan simbol (mis. <code>!@#$%</code>).
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Konfirmasi Password <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="password" name="password_confirmation" id="reset_password_confirmation" class="form-control" minlength="6" required>
+                            <input type="password" name="password_confirmation" id="reset_password_confirmation" class="form-control" minlength="8" required>
                             <button type="button" class="btn btn-outline-secondary" onclick="toggleResetPassword('reset_password_confirmation', this)">
                                 <i class="bi bi-eye"></i>
                             </button>
@@ -289,5 +294,17 @@ function resetPasswordVisibility(inputId) {
         icon.classList.remove('bi-eye-slash');
     }
 }
+
+@error('password')
+    // Modal Reset Password otomatis tertutup begitu halaman reload setelah
+    // submit gagal (state Bootstrap modal tidak ikut ke-reload). Tanpa ini,
+    // Owner tidak akan lihat kenapa reset-nya gagal — jadi pesannya
+    // ditampilkan lewat pop-up supaya tetap kelihatan.
+    Swal.fire({
+        icon: 'error',
+        title: 'Password tidak memenuhi syarat',
+        text: @json($message),
+    });
+@enderror
 </script>
 @endpush
