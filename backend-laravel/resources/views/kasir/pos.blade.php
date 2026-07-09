@@ -92,13 +92,13 @@
                     <div class="input-group input-group-sm">
                         <input type="text" id="discountCodeInput" class="form-control"
                                placeholder="Contoh: PROMO10" style="text-transform:uppercase;">
-                        <button type="button" class="btn btn-outline-primary" id="btnApplyDiscount" onclick="applyDiscountCode()">
-                            Terapkan
-                        </button>
                         <button type="button" class="btn btn-outline-danger" id="btnRemoveDiscount"
                                 style="display:none;" onclick="removeDiscountCode()" title="Batalkan diskon">
                             <i class="bi bi-x-lg"></i>
                         </button>
+                    </div>
+                    <div class="form-text text-muted" style="font-size:.7rem;">
+                        Ketik kode, lalu tekan <kbd class="px-1">Enter</kbd> untuk menerapkan.
                     </div>
                     <div id="discountAppliedInfo" class="small text-success mt-1" style="display:none;"></div>
                 </div>
@@ -364,8 +364,14 @@
             return;
         }
 
-        const btn = document.getElementById('btnApplyDiscount');
-        btn.disabled = true;
+        // Tombol "Terapkan" sengaja dihapus — kasir cukup ketik kode lalu
+        // tekan Enter, supaya tidak ada langkah "klik tombol" yang gampang
+        // kelupaan dan bikin diskon tidak jadi terpakai pas checkout.
+        // Input dikunci sementara selagi request jalan (mencegah Enter
+        // dobel-tekan kirim dua request sekaligus); kalau gagal dibuka lagi
+        // di blok catch, kalau berhasil tetap terkunci sebagai tanda diskon
+        // sedang aktif (dibuka lagi lewat tombol "Batalkan diskon").
+        codeInput.disabled = true;
 
         try {
             const res = await fetch(APPLY_DISCOUNT_URL, {
@@ -389,17 +395,30 @@
             info.textContent = `Kode "${data.code}" diterapkan — potongan ${formatRp(data.discount_amount)}`;
             info.style.display = 'block';
 
-            codeInput.disabled = true;
-            btn.style.display = 'none';
             document.getElementById('btnRemoveDiscount').style.display = 'inline-block';
 
             updateTotals();
         } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Kode diskon gagal diterapkan', text: err.message });
-        } finally {
-            btn.disabled = false;
+            // Kosongkan & buka lagi input kode diskon begitu popup error ditutup
+            // (baik lewat tombol OK, klik di luar popup, atau tombol Esc) —
+            // supaya kasir tidak bingung antara kode yang gagal tadi dengan
+            // kode baru yang mau dicoba, dan bisa langsung ketik ulang + Enter.
+            Swal.fire({ icon: 'error', title: 'Kode diskon gagal diterapkan', text: err.message }).then(() => {
+                codeInput.value = '';
+                codeInput.disabled = false;
+                codeInput.focus();
+            });
         }
     }
+
+    // Terapkan kode diskon saat kasir menekan Enter di kolom kode diskon —
+    // gantinya tombol "Terapkan" yang dihapus.
+    document.getElementById('discountCodeInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applyDiscountCode();
+        }
+    });
 
     function removeDiscountCode() {
         appliedDiscount = null;
@@ -410,7 +429,6 @@
 
         document.getElementById('discountAppliedInfo').style.display = 'none';
         document.getElementById('btnRemoveDiscount').style.display = 'none';
-        document.getElementById('btnApplyDiscount').style.display = 'inline-block';
 
         updateTotals();
     }
