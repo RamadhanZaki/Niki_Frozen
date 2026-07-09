@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class OwnerWebController extends Controller
 {
@@ -446,6 +447,46 @@ class OwnerWebController extends Controller
         }
 
         return redirect()->route('owner.settings')->with('success', 'Pengaturan berhasil disimpan.');
+    }
+
+    // ─── Akun Saya (profil pribadi Owner — beda dari Pengaturan Toko di atas) ──
+    public function account()
+    {
+        return view('owner.account');
+    }
+
+    /**
+     * Update profil Owner sendiri (nama, email, & opsional password).
+     * Logic-nya sama persis dengan KasirWebController::updateSettings() —
+     * lihat komentar di sana untuk penjelasan lengkap kenapa habis update
+     * langsung dipaksa logout.
+     */
+    public function updateAccount(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name'     => 'required|string|max:100',
+            'email'    => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => [
+                'nullable',
+                'confirmed',
+                Password::min(8)->mixedCase()->numbers()->symbols(),
+            ],
+        ], [
+            'password.confirmed' => 'Konfirmasi password tidak sama dengan password baru.',
+        ]);
+
+        $user->name  = $request->name;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return back()->with('profile_updated', true);
     }
 
     // ─── Kode Diskon ────────────────────────────────────────────────

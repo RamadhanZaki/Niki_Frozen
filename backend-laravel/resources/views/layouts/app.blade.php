@@ -391,7 +391,11 @@
             </a>
             <a href="{{ route('owner.settings') }}"
                class="nav-link {{ request()->routeIs('owner.settings') ? 'active' : '' }}">
-                <i class="bi bi-gear"></i> Pengaturan
+                <i class="bi bi-gear"></i> Pengaturan Toko
+            </a>
+            <a href="{{ route('owner.account') }}"
+               class="nav-link {{ request()->routeIs('owner.account') ? 'active' : '' }}">
+                <i class="bi bi-person-circle"></i> Akun Saya
             </a>
 
         @elseif(auth()->user()->role === 'kasir')

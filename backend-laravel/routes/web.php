@@ -45,6 +45,9 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::get('/settings',            [OwnerWebController::class, 'settings'])->name('settings');
     Route::post('/settings',           [OwnerWebController::class, 'updateSettings'])->name('settings.update');
 
+    Route::get('/account',             [OwnerWebController::class, 'account'])->name('account');
+    Route::put('/account',             [OwnerWebController::class, 'updateAccount'])->name('account.update');
+
     Route::get('/discounts',                 [OwnerWebController::class, 'discounts'])->name('discounts');
     Route::post('/discounts',                [OwnerWebController::class, 'storeDiscount'])->name('discounts.store');
     Route::put('/discounts/{discount}',      [OwnerWebController::class, 'updateDiscount'])->name('discounts.update');
