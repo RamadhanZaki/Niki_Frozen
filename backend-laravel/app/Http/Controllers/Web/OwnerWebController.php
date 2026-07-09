@@ -463,6 +463,7 @@ class OwnerWebController extends Controller
      */
     public function updateAccount(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $request->validate([

@@ -502,6 +502,13 @@ class KasirWebController extends Controller
      */
     public function updateSettings(Request $request)
     {
+        // @var hint di bawah ini murni untuk static analyzer (Intelephense/PHPStan):
+        // Auth::user() punya return type Authenticatable|null (interface tanpa
+        // method save()), padahal runtime-nya selalu instance App\Models\User
+        // (Eloquent Model yang punya save()). Tanpa hint ini editor akan salah
+        // menandai $user->save() di bawah sebagai "Undefined method" walau
+        // kodenya tetap berjalan normal.
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $request->validate([
