@@ -189,11 +189,21 @@
                     <p class="small text-muted">Reset password untuk <strong id="reset_user_name"></strong>.</p>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Password Baru <span class="text-danger">*</span></label>
-                        <input type="password" name="password" class="form-control" minlength="6" required>
+                        <div class="input-group">
+                            <input type="password" name="password" id="reset_password" class="form-control" minlength="6" required>
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleResetPassword('reset_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Konfirmasi Password <span class="text-danger">*</span></label>
-                        <input type="password" name="password_confirmation" class="form-control" minlength="6" required>
+                        <div class="input-group">
+                            <input type="password" name="password_confirmation" id="reset_password_confirmation" class="form-control" minlength="6" required>
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleResetPassword('reset_password_confirmation', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -245,9 +255,39 @@ function openUserModal(data = null) {
 }
 
 function openResetModal(id, name) {
-    document.getElementById('resetForm').action = `{{ url('owner/users') }}/${id}/reset-password`;
+    const form = document.getElementById('resetForm');
+    form.action = `{{ url('owner/users') }}/${id}/reset-password`;
     document.getElementById('reset_user_name').textContent = name;
+
+    // Reset form & pastikan password kembali tersembunyi setiap kali modal
+    // dibuka untuk kasir yang berbeda — supaya tidak ada input/tampilan
+    // password kasir sebelumnya yang kebawa/kelihatan.
+    form.reset();
+    resetPasswordVisibility('reset_password');
+    resetPasswordVisibility('reset_password_confirmation');
+
     resetModal.show();
+}
+
+function toggleResetPassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon  = btn.querySelector('i');
+    const isHidden = input.type === 'password';
+
+    input.type = isHidden ? 'text' : 'password';
+    icon.classList.toggle('bi-eye', !isHidden);
+    icon.classList.toggle('bi-eye-slash', isHidden);
+}
+
+function resetPasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    input.type = 'password';
+    const btn = input.nextElementSibling;
+    if (btn) {
+        const icon = btn.querySelector('i');
+        icon.classList.add('bi-eye');
+        icon.classList.remove('bi-eye-slash');
+    }
 }
 </script>
 @endpush
