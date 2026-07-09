@@ -83,7 +83,7 @@
         <table>
             @foreach($transaction->details as $item)
             <tr>
-                <td colspan="3" class="item-name">{{ $item->product->name ?? 'Produk' }}</td>
+                <td colspan="3" class="item-name">{{ $item->display_name }}</td>
             </tr>
             <tr>
                 <td>{{ $item->qty }} x {{ number_format($item->price_at_sale, 0, ',', '.') }}</td>

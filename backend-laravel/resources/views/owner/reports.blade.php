@@ -129,7 +129,7 @@
                         <tbody>
                             @forelse($produk_terlaris as $row)
                             <tr>
-                                <td class="small">{{ $row->product?->name ?? 'Produk dihapus' }}</td>
+                                <td class="small">{{ $row->display_name }}</td>
                                 <td class="small text-end">{{ $row->total_qty }}</td>
                                 <td class="small text-end">Rp {{ number_format($row->total_omzet, 0, ',', '.') }}</td>
                             </tr>

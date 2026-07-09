@@ -438,11 +438,190 @@
         updateTotals();
     });
 
-    document.getElementById('searchProduct').addEventListener('input', function () {
-        const keyword = this.value.toLowerCase();
+    // Dipisah jadi fungsi tersendiri (bukan cuma listener inline) karena harus
+    // dipanggil ulang setiap kali productsPoll() me-render ulang #productGrid
+    // — supaya kata kunci pencarian yang sedang diketik kasir tidak hilang
+    // begitu daftar produk ter-update otomatis di latar belakang.
+    function applySearchFilter() {
+        const keyword = document.getElementById('searchProduct').value.toLowerCase();
         document.querySelectorAll('.product-item').forEach(el => {
             el.style.display = el.dataset.name.includes(keyword) ? '' : 'none';
         });
+    }
+
+    document.getElementById('searchProduct').addEventListener('input', applySearchFilter);
+
+    // ═══════════════════════════════════════════════════════════════
+    // REALTIME PRODUK — polling ringan supaya daftar produk & stok di POS
+    // otomatis ter-update kalau Owner tambah/edit/hapus produk atau ubah
+    // stok, TANPA kasir perlu reload manual. Pola sama persis dengan polling
+    // notifikasi lonceng di layouts/app.blade.php (fetch berkala, bukan
+    // WebSocket/Pusher/Reverb — konsisten & tidak butuh infrastruktur baru).
+    //
+    // Ini juga jaring pengaman utama untuk race condition "kasir sedang buka
+    // POS, Owner hapus produk yang lagi ada di keranjang kasir": begitu poll
+    // berikutnya jalan, produk yang hilang otomatis dikeluarkan dari
+    // keranjang SEBELUM kasir sempat checkout, jadi tidak akan kena error
+    // validasi "items.*.id: exists:products,id" yang membingungkan di server.
+    // ═══════════════════════════════════════════════════════════════
+    const PRODUCTS_POLL_URL = "{{ route('kasir.pos.productsPoll') }}";
+    const PRODUCTS_POLL_INTERVAL_MS = 10000; // 10 detik — lebih rapat dari poll notifikasi (15 detik) karena stok/harga langsung memengaruhi transaksi yang sedang berjalan
+
+    function escapeHtmlPos(str) {
+        const div = document.createElement('div');
+        div.textContent = str ?? '';
+        return div.innerHTML;
+    }
+
+    // Escape JSON supaya aman disisipkan ke dalam atribut HTML `data-product='...'`.
+    // Urutan penting: "&" WAJIB paling awal, kalau tidak entity yang baru
+    // dibuat di langkah berikutnya (mis. &#39;) akan ikut ter-escape ulang
+    // jadi &amp;#39; yang salah. Ini padanan JS dari flag
+    // JSON_HEX_APOS | JSON_HEX_QUOT yang dipakai versi Blade (server-side).
+    function escapeForAttr(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/'/g, '&#39;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function productCardHtml(p) {
+        const outOfStock = p.stock <= 0;
+        const productJson = escapeForAttr(JSON.stringify({ id: p.id, name: p.name, price: p.price, stock: p.stock }));
+        return `
+            <div class="col-6 col-md-4 product-item" data-name="${escapeHtmlPos(p.name.toLowerCase())}" id="product-card-${p.id}">
+                <div class="card border-0 shadow-sm h-100 ${outOfStock ? 'opacity-50' : ''}">
+                    <div class="card-body text-center p-3">
+                        <img src="${escapeHtmlPos(p.image_url)}" alt="${escapeHtmlPos(p.name)}"
+                             class="rounded-3 mx-auto mb-2 d-block"
+                             style="width:64px;height:64px;object-fit:cover;">
+                        <div class="fw-semibold small mb-1">${escapeHtmlPos(p.name)}</div>
+                        <div class="text-muted" style="font-size:.7rem;">${escapeHtmlPos(p.category)}</div>
+                        <div class="fw-bold text-primary mb-2">${formatRp(p.price)}</div>
+                        <div class="small text-muted mb-2">Stok: ${p.stock}</div>
+
+                        <button type="button" class="btn btn-sm btn-dark w-100"
+                            ${outOfStock ? 'disabled' : ''}
+                            data-product='${productJson}'
+                            onclick="addToCart(JSON.parse(this.dataset.product))">
+                            <i class="bi bi-plus-lg"></i> Tambah
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function renderProducts(products) {
+        const grid = document.getElementById('productGrid');
+
+        if (products.length === 0) {
+            grid.innerHTML = `
+                <div class="col-12">
+                    <div class="text-center text-muted py-5">Belum ada produk untuk cabang ini.</div>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = products.map(productCardHtml).join('');
+        applySearchFilter();
+    }
+
+    /**
+     * Bandingkan isi keranjang kasir saat ini dengan daftar produk terbaru
+     * hasil poll. Produk yang sudah dihapus Owner otomatis dibuang dari
+     * keranjang; produk yang stoknya berkurang (tapi belum 0) otomatis
+     * di-clamp qty-nya supaya tidak melebihi stok terbaru. Kasir diberi tahu
+     * lewat satu toast ringkas kalau ada perubahan yang memengaruhi keranjangnya.
+     */
+    function reconcileCartWithProducts(products) {
+        if (cart.length === 0) return;
+
+        const productMap = new Map(products.map(p => [p.id, p]));
+        const removedNames = [];
+        const clampedNames = [];
+
+        const nextCart = [];
+        for (const item of cart) {
+            const latest = productMap.get(item.id);
+
+            if (!latest) {
+                removedNames.push(item.name);
+                continue; // produk sudah dihapus Owner → buang dari keranjang
+            }
+
+            let qty = item.qty;
+            if (latest.stock <= 0) {
+                removedNames.push(item.name);
+                continue; // stok baru saja habis → buang dari keranjang
+            }
+            if (qty > latest.stock) {
+                qty = latest.stock;
+                clampedNames.push(item.name);
+            }
+
+            nextCart.push({ ...item, price: latest.price, stock: latest.stock, qty });
+        }
+
+        if (removedNames.length === 0 && clampedNames.length === 0) return;
+
+        cart = nextCart;
+        invalidateDiscountIfCartChanged();
+        renderCart();
+
+        const parts = [];
+        if (removedNames.length) parts.push(`Dihapus dari keranjang: ${removedNames.join(', ')}.`);
+        if (clampedNames.length) parts.push(`Jumlah disesuaikan (stok berkurang): ${clampedNames.join(', ')}.`);
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Keranjang diperbarui otomatis',
+            text: parts.join(' '),
+            timer: 7000,
+            showConfirmButton: true,
+            confirmButtonText: 'Mengerti',
+        });
+    }
+
+    let isFirstProductsPoll = true;
+
+    async function pollProducts() {
+        // Sama seperti poll notifikasi: jangan polling kalau tab tidak
+        // aktif, hemat request — begitu tab aktif lagi ada listener terpisah
+        // di bawah yang langsung poll ulang.
+        if (document.visibilityState !== 'visible') return;
+
+        try {
+            const res = await fetch(PRODUCTS_POLL_URL, {
+                headers: { 'Accept': 'application/json' },
+            });
+            if (!res.ok) return;
+
+            const data = await res.json();
+            const products = data.products ?? [];
+
+            // Poll pertama sengaja TIDAK me-render ulang grid — halaman sudah
+            // di-render server (SSR) saat load, jadi tidak perlu ditimpa JS
+            // kalau datanya sama persis. Ini hanya dipakai untuk sinkronkan
+            // keranjang kalau ternyata ada perubahan yang sudah terjadi
+            // tepat sebelum halaman selesai dimuat.
+            if (!isFirstProductsPoll) {
+                renderProducts(products);
+            }
+            reconcileCartWithProducts(products);
+
+            isFirstProductsPoll = false;
+        } catch (e) {
+            // Diam-diam gagal (koneksi putus sesaat) — poll berikutnya coba lagi.
+        }
+    }
+
+    pollProducts();
+    setInterval(pollProducts, PRODUCTS_POLL_INTERVAL_MS);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') pollProducts();
     });
 
     // ═══════════════════════════════════════════════════════════════

@@ -107,7 +107,7 @@
                 'payment' => $t->payment,
                 'change' => $t->change_amount,
                 'items' => $t->details->map(fn ($d) => [
-                    'name' => $d->product->name ?? 'Produk dihapus',
+                    'name' => $d->display_name,
                     'qty' => $d->qty,
                     'price' => $d->price_at_sale,
                     'subtotal' => $d->subtotal,

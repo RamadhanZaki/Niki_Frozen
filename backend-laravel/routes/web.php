@@ -63,6 +63,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
 // ─── Kasir ──────────────────────────────────────────
 Route::middleware(['auth', 'role:kasir'])->prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/pos',           [KasirWebController::class, 'pos'])->name('pos');
+    Route::get('/pos/products-poll', [KasirWebController::class, 'productsPoll'])->name('pos.productsPoll');
     Route::post('/pos/checkout', [KasirWebController::class, 'checkout'])->name('pos.checkout');
     Route::post('/pos/apply-discount', [KasirWebController::class, 'applyDiscount'])->name('pos.applyDiscount');
     Route::get('/pos/receipt/{transaction}', [KasirWebController::class, 'receipt'])->name('pos.receipt');

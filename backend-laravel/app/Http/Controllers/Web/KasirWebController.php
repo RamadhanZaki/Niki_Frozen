@@ -46,6 +46,36 @@ class KasirWebController extends Controller
     }
 
     /**
+     * Polling ringan dipanggil dari JS di halaman POS setiap beberapa detik
+     * (pola yang sama dengan NotificationWebController::poll()) supaya daftar
+     * produk & stok ter-update otomatis kalau Owner tambah/edit/hapus produk
+     * atau adjust stok selagi kasir sedang buka POS — tanpa perlu reload
+     * manual dan tanpa WebSocket/Pusher/Reverb.
+     *
+     * Ini juga yang mencegah kasir checkout dengan produk yang sudah dihapus
+     * Owner: JS di sisi client membandingkan hasil poll ini dengan produk
+     * yang ada di keranjang, lalu otomatis membuang item yang sudah tidak
+     * ada dari daftar sebelum sempat dikirim ke checkout().
+     */
+    public function productsPoll()
+    {
+        $products = Product::with('stock')
+            ->where('branch_id', session('branch_id'))
+            ->get()
+            ->map(fn ($p) => [
+                'id'        => $p->id,
+                'name'      => $p->name,
+                'category'  => $p->category,
+                'price'     => (float) $p->price,
+                'stock'     => $p->stock?->quantity ?? 0,
+                'image_url' => $p->image_url,
+            ])
+            ->values();
+
+        return response()->json(['products' => $products]);
+    }
+
+    /**
      * Preview kode diskon SEBELUM pembayaran — dipanggil dari JS saat kasir
      * klik "Terapkan" di POS. Ini HANYA preview: tidak menambah used_count
      * dan tidak mengunci baris apa pun (lock=false), karena tidak ada state
@@ -263,6 +293,12 @@ class KasirWebController extends Controller
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
                         'product_id'     => $row['product']->id,
+                        // Snapshot nama produk SAAT INI juga (bukan cuma FK) —
+                        // supaya struk/riwayat/laporan transaksi ini tetap
+                        // akurat apa pun yang terjadi ke produknya nanti
+                        // (di-rename lewat updateProduct() atau dihapus lewat
+                        // destroyProduct()). Lihat TransactionDetail::getDisplayNameAttribute().
+                        'product_name'   => $row['product']->name,
                         'qty'            => $row['qty'],
                         'price_at_sale'  => $row['product']->price,
                         'subtotal'       => $row['subtotal'],

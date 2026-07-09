@@ -14,9 +14,11 @@ use App\Models\TransactionDetail;
 use App\Models\User;
 use App\Models\DiscountCode;
 use App\Notifications\PasswordResetByOwnerNotification;
+use App\Notifications\ProductChangedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -147,6 +149,8 @@ class OwnerWebController extends Controller
             'min_stock'  => $request->min_stock ?? 10,
         ]);
 
+        $this->notifyActiveKasirAboutProduct($product->branch_id, 'added', $product->name, $product);
+
         return redirect()->route('owner.products')->with('success', 'Produk berhasil ditambahkan.');
     }
 
@@ -165,6 +169,12 @@ class OwnerWebController extends Controller
 
         $data = $request->only('name', 'category', 'price', 'expired_date', 'branch_id');
         $data['category'] = trim($data['category']);
+
+        // Disimpan SEBELUM update, karena Owner bisa saja memindahkan produk
+        // ke cabang lain lewat form ini (ganti branch_id) — kalau itu terjadi,
+        // kasir di cabang LAMA perlu diberi tahu produknya hilang dari POS
+        // mereka (setara "deleted"), bukan cuma "updated".
+        $oldBranchId = $product->branch_id;
 
         if ($request->hasFile('image')) {
             // Hapus gambar lama kalau ada, lalu simpan yang baru
@@ -192,12 +202,22 @@ class OwnerWebController extends Controller
             ]);
         }
 
+        if ((int) $oldBranchId !== (int) $product->branch_id) {
+            // Pindah cabang: kasir cabang lama kehilangan produk ini dari POS
+            // mereka, kasir cabang baru baru saja mendapatkannya.
+            $this->notifyActiveKasirAboutProduct($oldBranchId, 'deleted', $product->name, $product);
+            $this->notifyActiveKasirAboutProduct($product->branch_id, 'added', $product->name, $product);
+        } else {
+            $this->notifyActiveKasirAboutProduct($product->branch_id, 'updated', $product->name, $product);
+        }
+
         return redirect()->route('owner.products')->with('success', 'Produk berhasil diperbarui.');
     }
 
     public function destroyProduct(Product $product)
     {
-        $name = $product->name;
+        $name     = $product->name;
+        $branchId = $product->branch_id;
 
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
@@ -206,7 +226,43 @@ class OwnerWebController extends Controller
         $product->stock()->delete();
         $product->delete();
 
+        // Dikirim SETELAH delete berhasil, dengan branch_id & nama yang sudah
+        // disimpan duluan (product row-nya sendiri sudah hilang dari DB di
+        // titik ini) — supaya kasir di cabang itu tahu produk ini hilang dari
+        // POS mereka, dan supaya keranjang yang kebetulan sudah berisi produk
+        // ini bisa langsung dibersihkan otomatis di sisi client.
+        $this->notifyActiveKasirAboutProduct($branchId, 'deleted', $name);
+
         return redirect()->route('owner.products')->with('success', "{$name} berhasil dihapus.");
+    }
+
+    /**
+     * Kirim notifikasi perubahan produk (tambah/edit/hapus) HANYA ke kasir
+     * yang sedang punya shift aktif di cabang yang sama dengan produk. Kasir
+     * yang belum buka shift tidak sedang di halaman POS, jadi tidak relevan
+     * diberi tahu sekarang — mereka akan lihat data terbaru begitu buka shift
+     * & masuk POS nanti.
+     */
+    private function notifyActiveKasirAboutProduct(?int $branchId, string $action, string $productName, ?Product $product = null): void
+    {
+        if (!$branchId) {
+            return;
+        }
+
+        $kasirIds = Shift::whereNull('closed_at')
+            ->where('branch_id', $branchId)
+            ->pluck('user_id')
+            ->unique();
+
+        if ($kasirIds->isEmpty()) {
+            return;
+        }
+
+        $kasirs = User::whereIn('id', $kasirIds)->where('role', 'kasir')->get();
+
+        if ($kasirs->isNotEmpty()) {
+            Notification::send($kasirs, new ProductChangedNotification($action, $productName, $product));
+        }
     }
 
     // ─── Stocks ─────────────────────────────────────────────────────
@@ -358,8 +414,20 @@ class OwnerWebController extends Controller
             ->whereHas('transaction', function ($q) use ($start, $end) {
                 $q->whereBetween('created_at', [$start, $end . ' 23:59:59']);
             })
-            ->selectRaw('product_id, SUM(qty) as total_qty, SUM(subtotal) as total_omzet')
-            ->groupBy('product_id')
+            // MAX(product_name) dipakai supaya laporan tetap tampil nama produk
+            // walau produknya sudah dihapus (product_id jadi null) — nama yang
+            // ditampilkan ambil dari salah satu snapshot transaksi di rentang
+            // ini (cukup representatif untuk kebutuhan laporan "produk terlaris").
+            //
+            // GROUP BY pakai COALESCE(product_id, product_name), BUKAN cuma
+            // product_id — soalnya kalau ada beberapa produk BERBEDA yang
+            // sama-sama sudah dihapus (product_id sama-sama NULL), SQL akan
+            // menggabungkan semuanya jadi satu baris kalau cuma group by
+            // product_id (NULL dianggap "sama" dengan NULL lain di GROUP BY).
+            // Fallback ke product_name menjaga produk-produk terhapus itu
+            // tetap terhitung terpisah.
+            ->selectRaw('product_id, MAX(product_name) as product_name, SUM(qty) as total_qty, SUM(subtotal) as total_omzet')
+            ->groupByRaw('COALESCE(product_id, product_name)')
             ->orderByDesc('total_qty')
             ->limit(5)
             ->get();
