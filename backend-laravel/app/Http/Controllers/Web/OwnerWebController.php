@@ -426,8 +426,21 @@ class OwnerWebController extends Controller
             // product_id (NULL dianggap "sama" dengan NULL lain di GROUP BY).
             // Fallback ke product_name menjaga produk-produk terhapus itu
             // tetap terhitung terpisah.
+            // GROUP BY dimulai dari product_id (BUKAN cuma COALESCE) supaya
+            // MySQL strict mode (ONLY_FULL_GROUP_BY) mengizinkan kolom
+            // `product_id` mentah di SELECT — MySQL cuma mengizinkan SELECT
+            // kolom non-agregat kalau kolom itu SENDIRI ada di GROUP BY,
+            // ekspresi COALESCE(product_id, ...) saja tidak dianggap cukup
+            // walau product_id ada di dalamnya.
+            //
+            // COALESCE(product_id, product_name) tetap disertakan di belakang
+            // product_id (bukan dihapus) supaya perilaku groupingnya tidak
+            // berubah: kalau ada beberapa produk BERBEDA yang sama-sama sudah
+            // dihapus (product_id sama-sama NULL), baris-baris itu tetap
+            // dipisah per product_name, bukan digabung jadi satu baris cuma
+            // karena NULL dianggap "sama" dengan NULL lain di GROUP BY.
             ->selectRaw('product_id, MAX(product_name) as product_name, SUM(qty) as total_qty, SUM(subtotal) as total_omzet')
-            ->groupByRaw('COALESCE(product_id, product_name)')
+            ->groupByRaw('product_id, COALESCE(product_id, product_name)')
             ->orderByDesc('total_qty')
             ->limit(5)
             ->get();
