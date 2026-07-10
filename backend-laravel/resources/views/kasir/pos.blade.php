@@ -240,7 +240,7 @@
         const existing = cart.find(i => i.id === product.id);
         if (existing) {
             if (existing.qty >= product.stock) {
-                alert('Stok tidak cukup.');
+                Swal.fire({ icon: 'warning', title: 'Stok Tidak Cukup', text: `Stok ${product.name} tersisa ${product.stock}.` });
                 return;
             }
             existing.qty++;
@@ -259,7 +259,7 @@
             cart = cart.filter(i => i.id !== id);
         } else if (item.qty > item.stock) {
             item.qty = item.stock;
-            alert('Stok tidak cukup.');
+            Swal.fire({ icon: 'warning', title: 'Stok Tidak Cukup', text: `Stok ${item.name} tersisa ${item.stock}.` });
         }
         invalidateDiscountIfCartChanged();
         renderCart();
@@ -787,11 +787,11 @@
         const payment = getPaymentValue();
 
         if (cart.length === 0) {
-            alert('Keranjang masih kosong.');
+            Swal.fire({ icon: 'warning', title: 'Keranjang Masih Kosong', text: 'Tambahkan produk terlebih dahulu sebelum bayar.' });
             return;
         }
         if (payment < grandTotal) {
-            alert('Jumlah pembayaran kurang dari total belanja.');
+            Swal.fire({ icon: 'warning', title: 'Pembayaran Kurang', text: 'Jumlah pembayaran kurang dari total belanja.' });
             return;
         }
 
