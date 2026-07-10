@@ -125,7 +125,7 @@
     // Jadi cukup munculkan banner ringan yang minta user klik "Muat ulang".
     // ═══════════════════════════════════════════════════════════════
     const NOTIF_HISTORY_POLL_URL = @json(route('notifications.poll'));
-    const NOTIF_HISTORY_POLL_INTERVAL_MS = 15000; // samain dengan interval lonceng notifikasi
+    const NOTIF_HISTORY_POLL_INTERVAL_MS = 5000; // samain dengan interval lonceng notifikasi
     const notifHistoryBaselineUnread = {{ (int) $unreadCount }};
 
     const notifUpdateBanner = document.getElementById('notifUpdateBanner');

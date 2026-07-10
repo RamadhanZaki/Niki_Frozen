@@ -403,7 +403,7 @@ document.addEventListener('visibilitychange', () => {
 // tiap ada transaksi baru masuk atau stok berubah dari kasir manapun.
 // ═══════════════════════════════════════════════════════════════
 const DASHBOARD_POLL_URL = "{{ route('owner.dashboard.poll') }}";
-const DASHBOARD_POLL_INTERVAL_MS = 15000; // 15 detik — samakan dengan cadence polling notifikasi; query dashboard lebih berat (banyak agregasi) daripada productsPoll jadi tidak dibuat serapat itu
+const DASHBOARD_POLL_INTERVAL_MS = 5000; // 5 detik — disamakan dengan cadence polling notifikasi (dipercepat dari 15 detik)
 
 function formatRpDash(n) {
     return 'Rp ' + Number(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });

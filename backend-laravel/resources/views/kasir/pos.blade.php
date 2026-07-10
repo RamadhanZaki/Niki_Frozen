@@ -529,7 +529,7 @@
     // validasi "items.*.id: exists:products,id" yang membingungkan di server.
     // ═══════════════════════════════════════════════════════════════
     const PRODUCTS_POLL_URL = "{{ route('kasir.pos.productsPoll') }}";
-    const PRODUCTS_POLL_INTERVAL_MS = 10000; // 10 detik — lebih rapat dari poll notifikasi (15 detik) karena stok/harga langsung memengaruhi transaksi yang sedang berjalan
+    const PRODUCTS_POLL_INTERVAL_MS = 3000; // 3 detik — dipercepat dari 10 detik, tetap lebih rapat dari poll notifikasi (5 detik) karena stok/harga langsung memengaruhi transaksi yang sedang berjalan
 
     function escapeHtmlPos(str) {
         const div = document.createElement('div');

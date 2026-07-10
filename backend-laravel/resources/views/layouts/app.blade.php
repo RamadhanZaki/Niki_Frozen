@@ -508,16 +508,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Browser memblokir bunyi apa pun (termasuk bunyi notifikasi) sampai
-         ada interaksi user pertama di halaman. Kalau owner cuma diam
-         menunggu notifikasi tanpa klik apa pun, bunyinya tidak akan pernah
-         keluar walau notifikasi tetap muncul & badge tetap update. Tombol
-         ini muncul otomatis lewat JS kalau kondisi itu terdeteksi, supaya
-         ada cara pasti buat "menyalakan" suaranya dengan satu klik. --}}
-    <a href="#" id="notif-sound-toggle" class="topbar-badge" style="display:none;" title="Aktifkan suara notifikasi">
-        <i class="bi bi-volume-mute-fill"></i>
-    </a>
 </header>
 
 {{-- ══ MAIN ══ --}}
@@ -645,7 +635,7 @@
      * queue worker, dsb) di hosting seadanya seperti Railway/XAMPP.
      */
     (function () {
-        const POLL_INTERVAL_MS = 15000; // 15 detik — cukup terasa "real-time" tanpa membebani server
+        const POLL_INTERVAL_MS = 5000; // 5 detik — dipercepat dari 15 detik; query poll ringan (indexed, limit 5) jadi aman dipercepat, dan tetap berhenti otomatis saat tab tidak aktif (lihat poll() di bawah)
         const pollUrl   = @json(route('notifications.poll'));
         const readAllUrl = @json(route('notifications.readAll'));
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -712,18 +702,15 @@
         // AudioContext baru bisa dipakai setelah ada interaksi user (klik,
         // keyboard, atau tap layar) — kebijakan autoplay browser modern
         // memblokir audio yang diputar sebelum itu terjadi SAMA SEKALI di
-        // halaman ini. Kalau owner cuma membuka dashboard lalu diam
-        // menunggu notifikasi tanpa menyentuh apa pun, bunyinya tidak akan
-        // keluar meski notifikasi & badge tetap ter-update seperti biasa —
-        // ini batasan browser, bukan bug. Makanya disediakan dua jalur:
-        //   1) Auto-unlock diam-diam begitu user klik/ketik/tap apa saja.
-        //   2) Kalau setelah beberapa detik belum ke-unlock otomatis
-        //      (berarti user belum sempat berinteraksi sama sekali),
-        //      tombol #notif-sound-toggle di sebelah lonceng dimunculkan
-        //      supaya ada cara pasti buat menyalakan suaranya.
+        // halaman ini. Sengaja TIDAK ada tombol/toggle manual apa pun di
+        // sini — suara harus selalu "standby" otomatis, jadi begitu ada
+        // interaksi pertama (klik/ketik/tap di mana saja), audio langsung
+        // ke-unlock diam-diam tanpa perlu aksi tambahan dari user. Untuk
+        // penggunaan POS sehari-hari (kasir/owner terus berinteraksi dengan
+        // halaman), ini praktis selalu ter-unlock dalam hitungan detik
+        // setelah halaman dibuka.
         // ═══════════════════════════════════════════════════════════════
         let notifAudioCtx = null;
-        const soundToggleEl = document.getElementById('notif-sound-toggle');
 
         function isAudioUnlocked() {
             return !!notifAudioCtx && notifAudioCtx.state === 'running';
@@ -737,30 +724,10 @@
             if (notifAudioCtx && notifAudioCtx.state === 'suspended') {
                 notifAudioCtx.resume();
             }
-            if (isAudioUnlocked() && soundToggleEl) {
-                soundToggleEl.style.display = 'none';
-            }
         }
 
         ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(evt => {
             document.addEventListener(evt, tryUnlockNotifAudio, { passive: true });
-        });
-
-        // Baru ditawarkan lewat tombol kalau 2.5 detik setelah halaman
-        // dimuat ternyata masih belum ke-unlock secara otomatis — dikasih
-        // jeda dulu supaya tidak "kedip" muncul-hilang kalau user memang
-        // langsung klik sesuatu begitu halaman selesai load.
-        setTimeout(() => {
-            if (soundToggleEl && !isAudioUnlocked()) {
-                soundToggleEl.style.display = '';
-            }
-        }, 2500);
-
-        soundToggleEl?.addEventListener('click', function (e) {
-            e.preventDefault();
-            tryUnlockNotifAudio();
-            playNotificationSound(); // bunyi konfirmasi supaya user tahu sudah aktif
-            soundToggleEl.style.display = 'none';
         });
 
         function playNotificationSound() {

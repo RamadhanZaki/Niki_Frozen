@@ -85,7 +85,7 @@
 // ulang apa-apa dari nol.
 // ═══════════════════════════════════════════════════════════════
 const SHIFTS_POLL_BASE_URL = "{{ route('owner.shifts.poll') }}";
-const SHIFTS_POLL_INTERVAL_MS = 15000;
+const SHIFTS_POLL_INTERVAL_MS = 5000; // dipercepat dari 15 detik, disamakan dengan cadence notifikasi
 
 function escapeHtmlShift(str) {
     const div = document.createElement('div');

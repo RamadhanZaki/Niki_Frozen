@@ -230,7 +230,7 @@ function openAdjustModal(data = null) {
 // menimpa tabel dengan data tak terfilter.
 // ═══════════════════════════════════════════════════════════════
 const STOCKS_POLL_BASE_URL = "{{ route('owner.stocks.poll') }}";
-const STOCKS_POLL_INTERVAL_MS = 15000;
+const STOCKS_POLL_INTERVAL_MS = 5000; // dipercepat dari 15 detik, disamakan dengan cadence notifikasi
 
 function escapeHtmlStock(str) {
     const div = document.createElement('div');
