@@ -42,7 +42,17 @@ class KasirWebController extends Controller
 
         $taxPercent = (float) Setting::get('tax_percent', 0);
 
-        return view('kasir.pos', compact('products', 'shift', 'taxPercent'));
+        // Ringkasan HARI INI (lintas semua shift kasir ini hari ini, bukan
+        // cuma shift yang sedang aktif) — supaya tetap akurat kalau kasir
+        // sempat buka/tutup shift lebih dari sekali dalam sehari. Ini beda
+        // dari "Total Penjualan" di halaman Shift yang cuma menghitung shift
+        // yang sedang berjalan.
+        $ringkasanHariIni = Transaction::where('user_id', Auth::id())
+            ->whereDate('created_at', today())
+            ->selectRaw('COUNT(*) as jumlah_transaksi, COALESCE(SUM(total), 0) as omzet')
+            ->first();
+
+        return view('kasir.pos', compact('products', 'shift', 'taxPercent', 'ringkasanHariIni'));
     }
 
     /**
