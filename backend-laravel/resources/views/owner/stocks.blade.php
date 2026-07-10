@@ -12,7 +12,7 @@
                 <div class="rounded-3 p-3" style="background:#e8f4fd"><i class="bi bi-box fs-4 text-primary"></i></div>
                 <div>
                     <div class="text-muted small">Total Produk</div>
-                    <div class="fw-bold fs-5">{{ $total_products }}</div>
+                    <div class="fw-bold fs-5" id="stock-total-products">{{ $total_products }}</div>
                 </div>
             </div>
         </div>
@@ -23,7 +23,7 @@
                 <div class="rounded-3 p-3" style="background:#fef9e7"><i class="bi bi-exclamation-triangle fs-4 text-warning"></i></div>
                 <div>
                     <div class="text-muted small">Stok Menipis</div>
-                    <div class="fw-bold fs-5">{{ $low_stock }}</div>
+                    <div class="fw-bold fs-5" id="stock-low">{{ $low_stock }}</div>
                 </div>
             </div>
         </div>
@@ -34,7 +34,7 @@
                 <div class="rounded-3 p-3" style="background:#fdf2f8"><i class="bi bi-x-circle fs-4 text-danger"></i></div>
                 <div>
                     <div class="text-muted small">Stok Habis</div>
-                    <div class="fw-bold fs-5">{{ $critical_stock }}</div>
+                    <div class="fw-bold fs-5" id="stock-critical">{{ $critical_stock }}</div>
                 </div>
             </div>
         </div>
@@ -45,7 +45,7 @@
                 <div class="rounded-3 p-3" style="background:#eafaf1"><i class="bi bi-currency-dollar fs-4 text-success"></i></div>
                 <div>
                     <div class="text-muted small">Nilai Total Stok</div>
-                    <div class="fw-bold fs-5">Rp {{ number_format($total_value, 0, ',', '.') }}</div>
+                    <div class="fw-bold fs-5" id="stock-total-value">Rp {{ number_format($total_value, 0, ',', '.') }}</div>
                 </div>
             </div>
         </div>
@@ -91,6 +91,12 @@
     </div>
 
     <div class="card-body p-0 mt-3">
+        <div id="stockPageNotice" class="px-3 d-none">
+            <div class="alert alert-warning alert-sm py-2 px-3 small mb-2">
+                Beberapa data di halaman ini sudah berubah dan mungkin tidak sesuai filter saat ini —
+                <a href="javascript:location.reload()">muat ulang halaman</a> untuk melihat hasil paling akurat.
+            </div>
+        </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
@@ -106,7 +112,7 @@
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="stocksTableBody">
                     @forelse($stocks as $i => $s)
                     @php
                         $qty = $s->stock?->quantity ?? 0;
@@ -215,5 +221,100 @@ function openAdjustModal(data = null) {
     }
     adjustModal.show();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// REALTIME STOK — polling ringan (pola sama dengan dashboard & POS kasir).
+// Mengirim ulang query string HALAMAN INI APA ADANYA (search/branch_id/
+// stock_filter/page yang sedang aktif di URL) ke endpoint poll, supaya
+// hasilnya konsisten dengan filter yang lagi dilihat Owner — bukan
+// menimpa tabel dengan data tak terfilter.
+// ═══════════════════════════════════════════════════════════════
+const STOCKS_POLL_BASE_URL = "{{ route('owner.stocks.poll') }}";
+const STOCKS_POLL_INTERVAL_MS = 15000;
+
+function escapeHtmlStock(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+}
+
+function stockStatusBadge(qty, min) {
+    if (qty == 0) return '<span class="badge bg-danger">Habis</span>';
+    if (qty <= min) return '<span class="badge bg-warning text-dark">Menipis</span>';
+    return '<span class="badge bg-success">Normal</span>';
+}
+
+function stockRowHtml(r) {
+    const qtyClass = r.qty == 0 ? 'text-danger' : (r.qty <= r.min ? 'text-warning' : '');
+    const productData = JSON.stringify({ id: r.id, name: r.name, stock: r.qty })
+        .replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `
+        <tr>
+            <td class="text-muted small">${r.no}</td>
+            <td class="fw-semibold">${escapeHtmlStock(r.name)}</td>
+            <td><span class="badge bg-secondary">${escapeHtmlStock(r.category)}</span></td>
+            <td class="small">${escapeHtmlStock(r.branch_name)}</td>
+            <td class="fw-semibold ${qtyClass}">${r.qty}</td>
+            <td class="text-muted small">${r.min}</td>
+            <td>${stockStatusBadge(r.qty, r.min)}</td>
+            <td class="text-muted small">${escapeHtmlStock(r.updated_at)}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary"
+                    onclick='openAdjustModal(JSON.parse(this.dataset.product))'
+                    data-product='${productData}'>
+                    <i class="bi bi-arrow-left-right"></i>
+                </button>
+            </td>
+        </tr>`;
+}
+
+async function pollStocks() {
+    if (document.visibilityState !== 'visible') return;
+
+    try {
+        // window.location.search sudah termasuk "?" di depan (atau string
+        // kosong kalau tidak ada filter) — tinggal disambung ke base URL.
+        const url = STOCKS_POLL_BASE_URL + window.location.search;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        document.getElementById('stock-total-products').textContent = data.total_products;
+        document.getElementById('stock-low').textContent = data.low_stock;
+        document.getElementById('stock-critical').textContent = data.critical_stock;
+        document.getElementById('stock-total-value').textContent =
+            'Rp ' + Number(data.total_value).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+
+        const body = document.getElementById('stocksTableBody');
+        if (!data.rows.length) {
+            body.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data stok</td></tr>';
+        } else {
+            body.innerHTML = data.rows.map(stockRowHtml).join('');
+        }
+
+        // Halaman yang lagi dibuka Owner (dari URL) sudah melebihi jumlah
+        // halaman hasil filter sekarang — kemungkinan produk terakhir di
+        // halaman ini baru saja "pindah kategori status" (mis. dari
+        // "Menipis" jadi "Normal" sementara filter stock_filter=low aktif).
+        // Kasih tahu lewat notice kecil, bukan diam-diam nampilin tabel yang
+        // membingungkan.
+        const notice = document.getElementById('stockPageNotice');
+        if (data.current_page > data.last_page && data.last_page > 0) {
+            notice.classList.remove('d-none');
+        } else {
+            notice.classList.add('d-none');
+        }
+    } catch (e) {
+        // Diam-diam gagal (koneksi putus sesaat) — poll berikutnya coba lagi.
+    }
+}
+
+pollStocks();
+setInterval(pollStocks, STOCKS_POLL_INTERVAL_MS);
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pollStocks();
+});
 </script>
 @endpush

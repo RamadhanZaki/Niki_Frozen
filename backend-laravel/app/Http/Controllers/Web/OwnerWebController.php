@@ -28,6 +28,60 @@ class OwnerWebController extends Controller
     // ─── Dashboard ──────────────────────────────────────────────────
     public function dashboard()
     {
+        $data = $this->buildDashboardData();
+
+        $transaksi_terbaru = Transaction::with(['user', 'branch'])
+            ->whereDate('created_at', today())
+            ->latest()->limit(10)->get();
+
+        $stok_menipis = Stock::with('product')
+            ->whereColumn('quantity', '<=', 'min_stock')->get();
+
+        return view('owner.dashboard', array_merge($data, compact(
+            'transaksi_terbaru', 'stok_menipis'
+        )));
+    }
+
+    /**
+     * Polling ringan untuk dashboard Owner — pola yang sama dengan
+     * NotificationWebController::poll() dan KasirWebController::productsPoll().
+     * Dipanggil dari JS setiap beberapa detik supaya angka statistik, grafik,
+     * transaksi terbaru, dan daftar stok menipis otomatis ter-update selagi
+     * kasir manapun sedang bertransaksi, TANPA Owner perlu reload manual.
+     */
+    public function dashboardPoll()
+    {
+        $data = $this->buildDashboardData();
+
+        $data['transaksi_terbaru'] = Transaction::with(['user', 'branch'])
+            ->whereDate('created_at', today())
+            ->latest()->limit(10)->get()
+            ->map(fn ($t) => [
+                'invoice_number' => $t->invoice_number,
+                'kasir'          => $t->user?->name ?? '-',
+                'cabang'         => $t->branch?->name ?? '-',
+                'waktu'          => \Carbon\Carbon::parse($t->created_at)->format('H:i'),
+                'total'          => (float) $t->total,
+            ])->values();
+
+        $data['stok_menipis'] = Stock::with('product')
+            ->whereColumn('quantity', '<=', 'min_stock')->get()
+            ->map(fn ($s) => [
+                'product_name' => $s->product?->name ?? '-',
+                'quantity'     => $s->quantity,
+            ])->values();
+
+        return response()->json($data);
+    }
+
+    /**
+     * Dipakai bareng oleh dashboard() (render halaman awal / SSR) dan
+     * dashboardPoll() (polling JSON) — supaya dua-duanya SELALU menghitung
+     * angka dengan cara yang sama persis dan tidak bisa saling drift kalau
+     * salah satu diedit belakangan tanpa mengubah yang lain.
+     */
+    private function buildDashboardData(): array
+    {
         $today    = now()->toDateString();
         $soonDate = now()->addDays(7)->toDateString();
 
@@ -42,13 +96,6 @@ class OwnerWebController extends Controller
             'transfer_stok'      => StockMutation::count(),
             'transfer_hari_ini'  => StockMutation::whereDate('created_at', today())->count(),
         ];
-
-        $transaksi_terbaru = Transaction::with(['user', 'branch'])
-            ->whereDate('created_at', today())
-            ->latest()->limit(10)->get();
-
-        $stok_menipis = Stock::with('product')
-            ->whereColumn('quantity', '<=', 'min_stock')->get();
 
         // ── Revenue 90 hari terakhir untuk grafik ──
         $start90 = now()->subDays(89)->startOfDay();
@@ -78,11 +125,10 @@ class OwnerWebController extends Controller
             ];
         })->values();
 
-        return view('owner.dashboard', compact(
-            'stats', 'transaksi_terbaru', 'stok_menipis',
-            'revenue_labels', 'revenue_data', 'total_revenue_90',
-            'kategori_produk'
-        ));
+        return compact(
+            'stats', 'revenue_labels', 'revenue_data',
+            'total_revenue_90', 'kategori_produk'
+        );
     }
 
     // ─── Products ───────────────────────────────────────────────────
@@ -268,6 +314,70 @@ class OwnerWebController extends Controller
     // ─── Stocks ─────────────────────────────────────────────────────
     public function stocks(Request $request)
     {
+        $stocks   = $this->buildStocksQuery($request)->paginate(15)->withQueryString();
+        $branches = Branch::select('id', 'name')->get();
+
+        [$total_products, $low_stock, $critical_stock, $total_value] = $this->stocksGlobalStats();
+
+        return view('owner.stocks', compact(
+            'stocks', 'branches', 'total_products', 'low_stock', 'critical_stock', 'total_value'
+        ));
+    }
+
+    /**
+     * Polling ringan untuk halaman Stocks — pola yang sama dengan
+     * dashboardPoll()/productsPoll(). JS di stocks.blade.php mengirim ulang
+     * search/branch_id/stock_filter/page yang SEDANG aktif di URL, supaya
+     * hasil poll konsisten dengan filter & halaman yang lagi dilihat Owner
+     * (bukan menimpa dengan data tak terfilter).
+     */
+    public function stocksPoll(Request $request)
+    {
+        $stocks = $this->buildStocksQuery($request)->paginate(15)->withQueryString();
+
+        $rows = $stocks->getCollection()->values()->map(function ($s, $i) use ($stocks) {
+            $qty = $s->stock?->quantity ?? 0;
+            $min = $s->stock?->min_stock ?? 10;
+
+            return [
+                'no'          => $stocks->firstItem() + $i,
+                'id'          => $s->id,
+                'name'        => $s->name,
+                'category'    => $s->category,
+                'branch_name' => $s->branch?->name ?? '-',
+                'qty'         => $qty,
+                'min'         => $min,
+                'updated_at'  => $s->stock?->updated_at
+                    ? \Carbon\Carbon::parse($s->stock->updated_at)->format('d/m/Y H:i')
+                    : '-',
+            ];
+        })->values();
+
+        [$total_products, $low_stock, $critical_stock, $total_value] = $this->stocksGlobalStats();
+
+        return response()->json([
+            'rows'           => $rows,
+            'total_products' => $total_products,
+            'low_stock'      => $low_stock,
+            'critical_stock' => $critical_stock,
+            'total_value'    => $total_value,
+            // Dikirim balik supaya JS bisa mendeteksi kalau hasil filter
+            // sekarang punya lebih SEDIKIT halaman daripada page yang lagi
+            // dibuka Owner (mis. produk terakhir di halaman itu baru saja
+            // pindah keluar dari filter) — JS akan kasih catatan kecil,
+            // bukan diam-diam nampilin tabel kosong tanpa penjelasan.
+            'current_page'   => $stocks->currentPage(),
+            'last_page'      => $stocks->lastPage(),
+        ]);
+    }
+
+    /**
+     * Query stok dengan filter search/branch_id/stock_filter — dipakai
+     * bareng oleh stocks() (SSR) dan stocksPoll() (JSON) supaya definisi
+     * "menipis"/"habis"/"normal" tidak pernah bisa beda antara dua tempat.
+     */
+    private function buildStocksQuery(Request $request)
+    {
         $query = Product::with(['branch', 'stock']);
 
         if ($request->filled('search')) {
@@ -288,19 +398,23 @@ class OwnerWebController extends Controller
             });
         }
 
-        $stocks   = $query->orderBy('name')->paginate(15)->withQueryString();
-        $branches = Branch::select('id', 'name')->get();
+        return $query->orderBy('name');
+    }
 
+    /**
+     * Statistik global (TIDAK terpengaruh filter/search/pagination) — 4
+     * angka di kartu atas halaman Stocks selalu menghitung SEMUA produk.
+     */
+    private function stocksGlobalStats(): array
+    {
         $total_products = Product::count();
-        $low_stock      = Stock::whereColumn('quantity', '<=', 'min_stock')->where('quantity', '>', 0)->count();
-        $critical_stock = Stock::where('quantity', 0)->count();
-        $total_value    = Product::join('stocks', 'stocks.product_id', '=', 'products.id')
+        $low_stock       = Stock::whereColumn('quantity', '<=', 'min_stock')->where('quantity', '>', 0)->count();
+        $critical_stock  = Stock::where('quantity', 0)->count();
+        $total_value     = Product::join('stocks', 'stocks.product_id', '=', 'products.id')
             ->selectRaw('SUM(products.price * stocks.quantity) as total')
             ->value('total') ?? 0;
 
-        return view('owner.stocks', compact(
-            'stocks', 'branches', 'total_products', 'low_stock', 'critical_stock', 'total_value'
-        ));
+        return [$total_products, $low_stock, $critical_stock, $total_value];
     }
 
     public function adjustStock(Request $request)

@@ -20,6 +20,7 @@ Route::middleware('auth')->group(function () {
 // ─── Owner ──────────────────────────────────────────
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
     Route::get('/dashboard',           [OwnerWebController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/poll',      [OwnerWebController::class, 'dashboardPoll'])->name('dashboard.poll');
 
     Route::get('/products',            [OwnerWebController::class, 'products'])->name('products');
     Route::post('/products',           [OwnerWebController::class, 'storeProduct'])->name('products.store');
@@ -27,6 +28,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::delete('/products/{product}',[OwnerWebController::class, 'destroyProduct'])->name('products.destroy');
 
     Route::get('/stocks',              [OwnerWebController::class, 'stocks'])->name('stocks');
+    Route::get('/stocks/poll',         [OwnerWebController::class, 'stocksPoll'])->name('stocks.poll');
     Route::post('/stocks/adjust',      [OwnerWebController::class, 'adjustStock'])->name('stocks.adjust');
 
     Route::get('/reports',             [OwnerWebController::class, 'reports'])->name('reports');
