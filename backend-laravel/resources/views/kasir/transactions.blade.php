@@ -4,9 +4,48 @@
 
 @section('content')
 
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="GET" action="{{ route('kasir.transactions') }}" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Cari No. Invoice</label>
+                <input type="text" name="search" class="form-control form-control-sm"
+                       value="{{ request('search') }}" placeholder="Contoh: INV-2026...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Dari Tanggal</label>
+                <input type="date" name="start" class="form-control form-control-sm" value="{{ request('start') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Sampai Tanggal</label>
+                <input type="date" name="end" class="form-control form-control-sm" value="{{ request('end') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Metode Bayar</label>
+                <select name="payment_method" class="form-select form-select-sm">
+                    <option value="">Semua</option>
+                    <option value="cash" {{ request('payment_method') === 'cash' ? 'selected' : '' }}>Tunai</option>
+                    <option value="qris" {{ request('payment_method') === 'qris' ? 'selected' : '' }}>QRIS</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-search me-1"></i> Cari
+                </button>
+                @if(request()->hasAny(['search', 'start', 'end', 'payment_method']))
+                    <a href="{{ route('kasir.transactions') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x-lg me-1"></i> Reset
+                    </a>
+                @endif
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 pt-3">
         <span class="fw-semibold">Transaksi Saya</span>
+        <span class="text-muted small">({{ $transactions->total() }} transaksi ditemukan)</span>
     </div>
 
     <div class="card-body p-0">
@@ -60,7 +99,13 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="8" class="text-center text-muted py-4">Belum ada transaksi</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted py-4">
+                        @if(request()->hasAny(['search', 'start', 'end', 'payment_method']))
+                            Tidak ada transaksi yang cocok dengan filter ini.
+                        @else
+                            Belum ada transaksi
+                        @endif
+                    </td></tr>
                     @endforelse
                 </tbody>
             </table>

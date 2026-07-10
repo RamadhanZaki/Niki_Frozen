@@ -511,11 +511,29 @@ class KasirWebController extends Controller
         return redirect()->route('kasir.shift')->with('success', 'Shift berhasil ditutup.');
     }
 
-    public function transactions()
+    public function transactions(Request $request)
     {
-        $transactions = Transaction::with('details.product', 'discountCode')
-            ->where('user_id', Auth::id())
-            ->latest()->paginate(15);
+        $query = Transaction::with('details.product', 'discountCode')
+            ->where('user_id', Auth::id());
+
+        // Cari berdasarkan nomor invoice (parsial, tidak case-sensitive)
+        if ($request->filled('search')) {
+            $query->where('invoice_number', 'like', '%'.$request->search.'%');
+        }
+
+        // Rentang tanggal — inklusif di kedua ujung (start jam 00:00, end jam 23:59:59)
+        if ($request->filled('start')) {
+            $query->where('created_at', '>=', $request->start.' 00:00:00');
+        }
+        if ($request->filled('end')) {
+            $query->where('created_at', '<=', $request->end.' 23:59:59');
+        }
+
+        if ($request->filled('payment_method') && in_array($request->payment_method, ['cash', 'qris'])) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        $transactions = $query->latest()->paginate(15)->withQueryString();
 
         return view('kasir.transactions', compact('transactions'));
     }
