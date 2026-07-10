@@ -176,12 +176,16 @@ class OwnerWebController extends Controller
             'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'price'        => 'required|numeric|min:0',
             'expired_date' => 'required|date',
-            'branch_id'    => 'required|exists:branches,id',
+            // Diubah dari 'branch_id' tunggal jadi array 'branch_ids' — Owner
+            // bisa centang lebih dari satu cabang sekaligus supaya tidak perlu
+            // isi form yang sama berulang kali untuk tiap cabang.
+            'branch_ids'    => 'required|array|min:1',
+            'branch_ids.*'  => 'exists:branches,id',
             'stock'        => 'required|integer|min:0',
             'min_stock'    => 'nullable|integer|min:0',
         ]);
 
-        $data = $request->only('name', 'category', 'price', 'expired_date', 'branch_id');
+        $data = $request->only('name', 'category', 'price', 'expired_date');
         $data['category'] = trim($data['category']);
 
         if ($request->hasFile('image')) {
@@ -192,20 +196,39 @@ class OwnerWebController extends Controller
             }
         }
 
-        $product = Product::create($data);
+        // Produk disimpan per baris PER CABANG (schema saat ini: 1 baris
+        // products = 1 cabang, lihat kolom branch_id di tabel products).
+        // Jadi menambahkan ke N cabang sekaligus berarti membuat N baris
+        // produk terpisah (dengan id masing-masing), semuanya berbagi
+        // nama/kategori/harga/gambar/tanggal expired yang sama persis dari
+        // satu kali isi form ini — hanya stok awal & branch_id yang berbeda
+        // per baris.
+        $branchIds      = array_unique(array_map('intval', $request->branch_ids));
+        $createdProducts = [];
 
-        Stock::create([
-            'product_id' => $product->id,
-            'branch_id'  => $request->branch_id,
-            'quantity'   => $request->stock,
-            'min_stock'  => $request->min_stock ?? 10,
-        ]);
+        foreach ($branchIds as $branchId) {
+            $product = Product::create($data + ['branch_id' => $branchId]);
 
-        $this->notifyActiveKasirAboutProduct($product->branch_id, 'added', $product->name, $product);
+            Stock::create([
+                'product_id' => $product->id,
+                'branch_id'  => $branchId,
+                'quantity'   => $request->stock,
+                'min_stock'  => $request->min_stock ?? 10,
+            ]);
 
-        ActivityLogger::log('product_created', "Menambahkan produk {$product->name}.", $product, branchId: $product->branch_id);
+            $this->notifyActiveKasirAboutProduct($branchId, 'added', $product->name, $product);
 
-        return redirect()->route('owner.products')->with('success', 'Produk berhasil ditambahkan.');
+            ActivityLogger::log('product_created', "Menambahkan produk {$product->name}.", $product, branchId: $branchId);
+
+            $createdProducts[] = $product;
+        }
+
+        $branchCount = count($branchIds);
+        $message = $branchCount > 1
+            ? "Produk berhasil ditambahkan ke {$branchCount} cabang."
+            : 'Produk berhasil ditambahkan.';
+
+        return redirect()->route('owner.products')->with('success', $message);
     }
 
     public function updateProduct(Request $request, Product $product)

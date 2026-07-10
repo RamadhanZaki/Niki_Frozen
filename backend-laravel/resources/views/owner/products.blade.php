@@ -215,7 +215,25 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Cabang <span class="text-danger">*</span></label>
-                            <select name="branch_id" id="f_branch_id" class="form-select" required>
+
+                            {{-- Mode TAMBAH: checkbox multi-pilih — Owner bisa centang lebih
+                                 dari satu cabang sekaligus, produk yang sama akan dibuat di
+                                 semua cabang yang dicentang dalam satu kali submit. --}}
+                            <div id="branchAddGroup" class="border rounded-2 p-2" style="max-height:110px; overflow-y:auto;">
+                                @foreach($branches as $b)
+                                    <div class="form-check">
+                                        <input class="form-check-input branch-checkbox" type="checkbox"
+                                               name="branch_ids[]" value="{{ $b->id }}" id="f_branch_{{ $b->id }}">
+                                        <label class="form-check-label small" for="f_branch_{{ $b->id }}">{{ $b->name }}</label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div id="branchAddError" class="text-danger small mt-1 d-none">Pilih minimal satu cabang.</div>
+
+                            {{-- Mode EDIT: tetap dropdown tunggal — mengubah cabang produk
+                                 yang sudah ada memindahkannya (lihat updateProduct()), beda
+                                 semantik dari "tambah ke banyak cabang sekaligus". --}}
+                            <select name="branch_id" id="f_branch_id" class="form-select d-none">
                                 @foreach($branches as $b)
                                     <option value="{{ $b->id }}">{{ $b->name }}</option>
                                 @endforeach
@@ -226,6 +244,7 @@
                         <div class="col-6">
                             <label class="form-label fw-semibold">Stok Awal <span class="text-danger">*</span></label>
                             <input type="number" name="stock" id="f_stock" class="form-control" min="0" required>
+                            <div id="stockMultiBranchNote" class="form-text d-none">Jumlah ini dipakai sebagai stok awal di <strong>setiap</strong> cabang yang dicentang.</div>
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Stok Minimum</label>
@@ -314,17 +333,31 @@ function openProductModal(data = null) {
     const title = document.getElementById('productModalTitle');
     const preview = document.getElementById('f_preview');
 
+    const branchAddGroup = document.getElementById('branchAddGroup');
+    const branchAddError = document.getElementById('branchAddError');
+    const branchSelect   = document.getElementById('f_branch_id');
+    const stockNote      = document.getElementById('stockMultiBranchNote');
+    const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
+
     if (data) {
         title.textContent = 'Edit Produk';
         form.action = `{{ url('owner/products') }}/${data.id}`;
         // Form file upload tidak bisa kirim method PUT asli, jadi pakai method spoofing
         methodField.innerHTML = '<input type="hidden" name="_method" value="PUT">';
 
+        // Mode edit: pakai dropdown cabang tunggal, sembunyikan checkbox multi-cabang.
+        branchAddGroup.classList.add('d-none');
+        branchAddError.classList.add('d-none');
+        stockNote.classList.add('d-none');
+        branchSelect.classList.remove('d-none');
+        branchSelect.setAttribute('required', 'required');
+        branchCheckboxes.forEach(cb => cb.checked = false);
+
         document.getElementById('f_name').value = data.name;
         setCategoryValue(data.category);
         setPriceValue(data.price);
         document.getElementById('f_expired_date').value = data.expired_date.substring(0, 10);
-        document.getElementById('f_branch_id').value = data.branch_id;
+        branchSelect.value = data.branch_id;
         document.getElementById('f_stock').value = data.stock;
         document.getElementById('f_min_stock').value = data.min_stock;
         preview.src = data.image_url;
@@ -336,11 +369,39 @@ function openProductModal(data = null) {
         setPriceValue('');
         setCategoryValue(catSelect.options[0]?.value ?? '');
         preview.src = '{{ asset("images/no-product.svg") }}';
+
+        // Mode tambah: pakai checkbox multi-cabang, sembunyikan dropdown tunggal
+        // (dan lepas atribut required-nya supaya tidak ikut divalidasi browser
+        // padahal sedang disembunyikan).
+        branchAddGroup.classList.remove('d-none');
+        branchAddError.classList.add('d-none');
+        stockNote.classList.remove('d-none');
+        branchSelect.classList.add('d-none');
+        branchSelect.removeAttribute('required');
+        branchCheckboxes.forEach(cb => cb.checked = false);
     }
 
     document.getElementById('f_image').value = '';
     productModal.show();
 }
+
+// Validasi manual: mode Tambah butuh minimal 1 cabang dicentang. Checkbox
+// group tidak bisa pakai atribut "required" HTML biasa (itu akan memaksa
+// SEMUA checkbox tercentang, bukan "minimal satu"), jadi divalidasi manual
+// saat submit.
+document.getElementById('productForm').addEventListener('submit', function (e) {
+    const branchAddGroup = document.getElementById('branchAddGroup');
+    const branchAddError = document.getElementById('branchAddError');
+
+    if (branchAddGroup.classList.contains('d-none')) return; // mode edit, lewati
+
+    const anyChecked = document.querySelectorAll('.branch-checkbox:checked').length > 0;
+    if (!anyChecked) {
+        e.preventDefault();
+        branchAddError.classList.remove('d-none');
+        branchAddGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
 
 // Preview gambar saat user pilih file baru — sekaligus validasi ukuran
 // SEBELUM form di-submit, supaya kalau file kelebihan ukuran, Owner langsung
