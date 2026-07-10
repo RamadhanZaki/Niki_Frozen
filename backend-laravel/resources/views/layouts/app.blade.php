@@ -504,6 +504,16 @@
             </div>
         </div>
     </div>
+
+    {{-- Browser memblokir bunyi apa pun (termasuk bunyi notifikasi) sampai
+         ada interaksi user pertama di halaman. Kalau owner cuma diam
+         menunggu notifikasi tanpa klik apa pun, bunyinya tidak akan pernah
+         keluar walau notifikasi tetap muncul & badge tetap update. Tombol
+         ini muncul otomatis lewat JS kalau kondisi itu terdeteksi, supaya
+         ada cara pasti buat "menyalakan" suaranya dengan satu klik. --}}
+    <a href="#" id="notif-sound-toggle" class="topbar-badge" style="display:none;" title="Aktifkan suara notifikasi">
+        <i class="bi bi-volume-mute-fill"></i>
+    </a>
 </header>
 
 {{-- ══ MAIN ══ --}}
@@ -689,6 +699,92 @@
             });
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // BUNYI NOTIFIKASI — pakai Web Audio API (oscillator dua nada, "ding"),
+        // bukan file audio eksternal — supaya tidak perlu tambah aset/asset
+        // pipeline baru cuma untuk satu suara pendek, dan tetap konsisten
+        // dengan filosofi "tanpa infrastruktur tambahan" di file ini.
+        //
+        // AudioContext baru bisa dipakai setelah ada interaksi user (klik,
+        // keyboard, atau tap layar) — kebijakan autoplay browser modern
+        // memblokir audio yang diputar sebelum itu terjadi SAMA SEKALI di
+        // halaman ini. Kalau owner cuma membuka dashboard lalu diam
+        // menunggu notifikasi tanpa menyentuh apa pun, bunyinya tidak akan
+        // keluar meski notifikasi & badge tetap ter-update seperti biasa —
+        // ini batasan browser, bukan bug. Makanya disediakan dua jalur:
+        //   1) Auto-unlock diam-diam begitu user klik/ketik/tap apa saja.
+        //   2) Kalau setelah beberapa detik belum ke-unlock otomatis
+        //      (berarti user belum sempat berinteraksi sama sekali),
+        //      tombol #notif-sound-toggle di sebelah lonceng dimunculkan
+        //      supaya ada cara pasti buat menyalakan suaranya.
+        // ═══════════════════════════════════════════════════════════════
+        let notifAudioCtx = null;
+        const soundToggleEl = document.getElementById('notif-sound-toggle');
+
+        function isAudioUnlocked() {
+            return !!notifAudioCtx && notifAudioCtx.state === 'running';
+        }
+
+        function tryUnlockNotifAudio() {
+            if (!notifAudioCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) notifAudioCtx = new AudioCtx();
+            }
+            if (notifAudioCtx && notifAudioCtx.state === 'suspended') {
+                notifAudioCtx.resume();
+            }
+            if (isAudioUnlocked() && soundToggleEl) {
+                soundToggleEl.style.display = 'none';
+            }
+        }
+
+        ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(evt => {
+            document.addEventListener(evt, tryUnlockNotifAudio, { passive: true });
+        });
+
+        // Baru ditawarkan lewat tombol kalau 2.5 detik setelah halaman
+        // dimuat ternyata masih belum ke-unlock secara otomatis — dikasih
+        // jeda dulu supaya tidak "kedip" muncul-hilang kalau user memang
+        // langsung klik sesuatu begitu halaman selesai load.
+        setTimeout(() => {
+            if (soundToggleEl && !isAudioUnlocked()) {
+                soundToggleEl.style.display = '';
+            }
+        }, 2500);
+
+        soundToggleEl?.addEventListener('click', function (e) {
+            e.preventDefault();
+            tryUnlockNotifAudio();
+            playNotificationSound(); // bunyi konfirmasi supaya user tahu sudah aktif
+            soundToggleEl.style.display = 'none';
+        });
+
+        function playNotificationSound() {
+            if (!isAudioUnlocked()) return;
+
+            const now = notifAudioCtx.currentTime;
+
+            // Dua nada pendek naik (mis. C6 → E6) — pola "ding" umum, singkat
+            // dan tidak mengganggu kalau notifikasi datang beruntun.
+            [{ freq: 1046.5, start: 0 }, { freq: 1318.5, start: 0.11 }].forEach(({ freq, start }) => {
+                const osc  = notifAudioCtx.createOscillator();
+                const gain = notifAudioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+
+                gain.gain.setValueAtTime(0, now + start);
+                gain.gain.linearRampToValueAtTime(0.15, now + start + 0.01); // volume rendah, tidak mengagetkan
+                gain.gain.exponentialRampToValueAtTime(0.001, now + start + 0.2);
+
+                osc.connect(gain);
+                gain.connect(notifAudioCtx.destination);
+
+                osc.start(now + start);
+                osc.stop(now + start + 0.22);
+            });
+        }
+
         async function poll() {
             // Jangan polling kalau tab sedang tidak aktif/di-minimize — hemat
             // request, dan begitu tab aktif lagi ada listener terpisah di
@@ -709,6 +805,7 @@
 
                 if (!isFirstPoll && newestId && newestId !== lastSeenId) {
                     showToast(data.notifications[0]);
+                    playNotificationSound();
                 }
 
                 if (newestId) lastSeenId = newestId;

@@ -1,848 +1,166 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Niki Frozen') — Niki Frozen</title>
+@extends('layouts.app')
+@section('title', 'Riwayat Notifikasi')
+@section('page-title', 'Riwayat Notifikasi')
 
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/favicon.svg') }}">
-    <link rel="alternate icon" href="{{ asset('images/favicon.svg') }}">
+@section('content')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+@if(session('success'))
+    <div class="alert alert-success py-2 small">{{ session('success') }}</div>
+@endif
 
-    <style>
-        :root {
-            --nk-primary:     #0F4C81;
-            --nk-accent:      #00B4D8;
-            --nk-accent-soft: #e0f7fc;
-            --nk-danger:      #e63946;
-            --nk-success:     #2dc653;
-            --nk-warning:     #f4a261;
-            --nk-sidebar-bg:  #0d3d6b;
-            --nk-sidebar-w:   240px;
-            --nk-topbar-h:    56px;
-        }
+{{-- Muncul lewat JS kalau polling mendeteksi ada notifikasi baru masuk /
+     status berubah selagi halaman ini terbuka. Sengaja tidak auto-replace
+     tabel di bawah (ada paginasi + filter status + form per baris), jadi
+     cukup ajak user klik "Muat ulang" sendiri. --}}
+<div id="notifUpdateBanner" class="alert alert-info d-none py-2 px-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="small"><i class="bi bi-arrow-repeat me-1"></i> Ada pembaruan notifikasi.</span>
+    <a href="{{ url()->full() }}" class="btn btn-sm btn-primary">Muat ulang</a>
+</div>
 
-        * { box-sizing: border-box; }
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="fw-semibold">
+            Semua Notifikasi
+            @if($unreadCount > 0)
+                <span class="badge bg-danger ms-1">{{ $unreadCount }} belum dibaca</span>
+            @endif
+        </span>
 
-        body {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.875rem;
-            background: #f0f4f8;
-            color: #1e293b;
-        }
-
-        /* ── SIDEBAR ── */
-        #sidebar {
-            position: fixed;
-            top: 0; left: 0;
-            width: var(--nk-sidebar-w);
-            height: 100vh;
-            background: var(--nk-sidebar-bg);
-            display: flex;
-            flex-direction: column;
-            z-index: 1040;
-            transition: transform .25s ease;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 18px 20px 14px;
-            border-bottom: 1px solid rgba(255,255,255,.08);
-            text-decoration: none;
-        }
-        .sidebar-brand .brand-icon {
-            width: 36px; height: 36px;
-            background: var(--nk-accent);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; color: #fff;
-            flex-shrink: 0;
-        }
-        .sidebar-brand .brand-text { line-height: 1.2; }
-        .sidebar-brand .brand-text strong {
-            display: block;
-            color: #fff;
-            font-size: .95rem;
-            font-weight: 700;
-        }
-        .sidebar-brand .brand-text span {
-            color: var(--nk-accent);
-            font-size: .68rem;
-            font-weight: 500;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 10px;
-        }
-        .sidebar-nav::-webkit-scrollbar { width: 4px; }
-        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
-
-        .nav-label {
-            font-size: .65rem;
-            font-weight: 600;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            color: rgba(255,255,255,.35);
-            padding: 12px 10px 4px;
-        }
-
-        .sidebar-nav .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 12px;
-            border-radius: 8px;
-            color: rgba(255,255,255,.65);
-            font-size: .82rem;
-            font-weight: 500;
-            transition: background .15s, color .15s;
-            text-decoration: none;
-        }
-        .sidebar-nav .nav-link i {
-            font-size: 1rem;
-            width: 18px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .sidebar-nav .nav-link:hover,
-        .sidebar-nav .nav-link.active {
-            background: rgba(255,255,255,.1);
-            color: #fff;
-        }
-        .sidebar-nav .nav-link.active {
-            background: var(--nk-accent);
-            color: #fff;
-        }
-
-        .sidebar-footer {
-            padding: 14px 12px;
-            border-top: 1px solid rgba(255,255,255,.08);
-        }
-        .sidebar-footer .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .user-avatar {
-            width: 32px; height: 32px;
-            background: var(--nk-accent);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff;
-            font-size: .75rem;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-        .user-name  { color: #fff; font-size: .8rem; font-weight: 600; line-height: 1.2; }
-        .user-role  { color: rgba(255,255,255,.45); font-size: .68rem; text-transform: capitalize; }
-
-        /* ── TOPBAR ── */
-        #topbar {
-            position: fixed;
-            top: 0;
-            left: var(--nk-sidebar-w);
-            right: 0;
-            height: var(--nk-topbar-h);
-            background: #fff;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            padding: 0 24px;
-            z-index: 1030;
-            gap: 12px;
-        }
-        #topbar .page-title {
-            font-size: .9rem;
-            font-weight: 600;
-            color: #1e293b;
-            flex: 1;
-        }
-        #topbar .topbar-badge {
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            background: #f1f5f9;
-            display: flex; align-items: center; justify-content: center;
-            color: #64748b;
-            cursor: pointer;
-            transition: background .15s;
-            text-decoration: none;
-        }
-        #topbar .topbar-badge:hover { background: #e2e8f0; }
-        #sidebar-toggle {
-            display: none;
-            background: none; border: none;
-            color: #64748b; font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        /* ── MAIN CONTENT ── */
-        #main-content {
-            margin-left: var(--nk-sidebar-w);
-            padding-top: var(--nk-topbar-h);
-            min-height: 100vh;
-        }
-        .content-inner { padding: 24px; }
-
-        /* ── CARDS ── */
-        .card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,.04);
-        }
-        .card-header {
-            background: #fff;
-            border-bottom: 1px solid #e2e8f0;
-            border-radius: 12px 12px 0 0 !important;
-            padding: 14px 18px;
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-        /* ── STAT CARDS ── */
-        .stat-card {
-            border-radius: 12px;
-            padding: 18px 20px;
-            border: 1px solid #e2e8f0;
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,.04);
-        }
-        .stat-card .stat-icon {
-            width: 42px; height: 42px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.15rem;
-            margin-bottom: 12px;
-        }
-        .stat-card .stat-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 3px;
-        }
-        .stat-card .stat-label {
-            font-size: .73rem;
-            color: #64748b;
-            font-weight: 500;
-        }
-
-        /* ── BUTTONS ── */
-        .btn-primary { background: var(--nk-primary); border-color: var(--nk-primary); }
-        .btn-primary:hover { background: #0a3a6a; border-color: #0a3a6a; }
-        .btn-outline-primary { color: var(--nk-primary); border-color: var(--nk-primary); }
-        .btn-outline-primary:hover { background: var(--nk-primary); border-color: var(--nk-primary); }
-
-        /* ── TABLES ── */
-        .table { font-size: .825rem; }
-        .table thead th {
-            font-size: .7rem;
-            font-weight: 600;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-            color: #64748b;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 10px 14px;
-        }
-        .table tbody td { padding: 11px 14px; vertical-align: middle; }
-        .table tbody tr:hover { background: #f8fafc; }
-
-        /* ── ALERTS ── */
-        .alert { border-radius: 10px; font-size: .82rem; }
-
-        /* ── BADGES ── */
-        .badge { font-weight: 500; font-size: .7rem; border-radius: 6px; }
-
-        /* ── OVERLAY (mobile) ── */
-        #sidebar-overlay {
-            display: none;
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,.45);
-            z-index: 1039;
-        }
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 991.98px) {
-            #sidebar { transform: translateX(calc(-1 * var(--nk-sidebar-w))); }
-            #sidebar.open { transform: translateX(0); }
-            #topbar { left: 0; }
-            #main-content { margin-left: 0; }
-            #sidebar-toggle { display: block; }
-            #sidebar-overlay.show { display: block; }
-        }
-
-        /* ── SWEETALERT2 (confirm dialogs) ── */
-        .nk-swal-popup {
-            border-radius: 18px !important;
-            font-family: 'Inter', sans-serif !important;
-            padding: 28px 24px 26px !important;
-        }
-        .nk-swal-popup .swal2-icon {
-            width: 4.2em;
-            height: 4.2em;
-            margin: 0 auto 16px;
-        }
-        .nk-swal-popup .swal2-icon.swal2-warning {
-            border-color: var(--nk-warning);
-            color: var(--nk-warning);
-        }
-        .nk-swal-popup .swal2-icon.swal2-error {
-            border-color: var(--nk-danger);
-            color: var(--nk-danger);
-        }
-        .nk-swal-title {
-            font-size: 1.15rem !important;
-            font-weight: 700 !important;
-            color: #1e293b !important;
-            padding-top: 0 !important;
-        }
-        .nk-swal-text {
-            font-size: .85rem !important;
-            color: #64748b !important;
-        }
-        .nk-swal-confirm {
-            border-radius: 9px !important;
-            font-weight: 600 !important;
-            font-size: .82rem !important;
-            padding: 9px 22px !important;
-            box-shadow: none !important;
-        }
-        .nk-swal-cancel {
-            border-radius: 9px !important;
-            font-weight: 600 !important;
-            font-size: .82rem !important;
-            padding: 9px 22px !important;
-            box-shadow: none !important;
-        }
-        .nk-swal-popup .swal2-actions {
-            gap: 10px;
-            margin-top: 18px !important;
-        }
-    </style>
-
-    @stack('styles')
-</head>
-<body>
-
-{{-- ══ SIDEBAR ══ --}}
-<aside id="sidebar">
-    <a href="#" class="sidebar-brand">
-        <div class="brand-icon"><i class="bi bi-snow2"></i></div>
-        <div class="brand-text">
-            <strong>Niki Frozen</strong>
-            <span>{{ auth()->user()->role ?? 'sistem' }}</span>
-        </div>
-    </a>
-
-    <nav class="sidebar-nav">
-        @if(auth()->user()->role === 'owner')
-            <div class="nav-label">Utama</div>
-            <a href="{{ route('owner.dashboard') }}"
-               class="nav-link {{ request()->routeIs('owner.dashboard') ? 'active' : '' }}">
-                <i class="bi bi-grid-1x2"></i> Dashboard
-            </a>
-
-            <div class="nav-label">Manajemen</div>
-            <a href="{{ route('owner.products') }}"
-               class="nav-link {{ request()->routeIs('owner.products') ? 'active' : '' }}">
-                <i class="bi bi-box-seam"></i> Produk
-            </a>
-            <a href="{{ route('owner.stocks') }}"
-               class="nav-link {{ request()->routeIs('owner.stocks') ? 'active' : '' }}">
-                <i class="bi bi-archive"></i> Stok
-            </a>
-            <a href="{{ route('owner.discounts') }}"
-               class="nav-link {{ request()->routeIs('owner.discounts') ? 'active' : '' }}">
-                <i class="bi bi-ticket-perforated"></i> Kode Diskon
-            </a>
-            <a href="{{ route('owner.branches') }}"
-               class="nav-link {{ request()->routeIs('owner.branches') ? 'active' : '' }}">
-                <i class="bi bi-building"></i> Cabang
-            </a>
-            <a href="{{ route('owner.users') }}"
-               class="nav-link {{ request()->routeIs('owner.users') ? 'active' : '' }}">
-                <i class="bi bi-people"></i> Pengguna
-            </a>
-            <a href="{{ route('owner.shifts') }}"
-               class="nav-link {{ request()->routeIs('owner.shifts') ? 'active' : '' }}">
-                <i class="bi bi-clock-history"></i> Shift
-            </a>
-            <a href="{{ route('owner.notifications.history') }}"
-               class="nav-link {{ request()->routeIs('owner.notifications.history') ? 'active' : '' }}">
-                <i class="bi bi-bell"></i> Riwayat Notifikasi
-            </a>
-
-            <div class="nav-label">Laporan & Sistem</div>
-            <a href="{{ route('owner.reports') }}"
-               class="nav-link {{ request()->routeIs('owner.reports') ? 'active' : '' }}">
-                <i class="bi bi-bar-chart-line"></i> Laporan
-            </a>
-            <a href="{{ route('owner.settings') }}"
-               class="nav-link {{ request()->routeIs('owner.settings') ? 'active' : '' }}">
-                <i class="bi bi-gear"></i> Pengaturan Toko
-            </a>
-            <a href="{{ route('owner.account') }}"
-               class="nav-link {{ request()->routeIs('owner.account') ? 'active' : '' }}">
-                <i class="bi bi-person-circle"></i> Akun Saya
-            </a>
-
-        @elseif(auth()->user()->role === 'kasir')
-            <div class="nav-label">Kasir</div>
-            <a href="{{ route('kasir.pos') }}"
-               class="nav-link {{ request()->routeIs('kasir.pos') ? 'active' : '' }}">
-                <i class="bi bi-bag-check"></i> Point of Sale
-            </a>
-            <a href="{{ route('kasir.shift') }}"
-               class="nav-link {{ request()->routeIs('kasir.shift') ? 'active' : '' }}">
-                <i class="bi bi-play-circle"></i> Shift Saya
-            </a>
-            <a href="{{ route('kasir.transactions') }}"
-               class="nav-link {{ request()->routeIs('kasir.transactions') ? 'active' : '' }}">
-                <i class="bi bi-receipt"></i> Transaksi
-            </a>
-            <a href="{{ route('kasir.notifications.history') }}"
-               class="nav-link {{ request()->routeIs('kasir.notifications.history') ? 'active' : '' }}">
-                <i class="bi bi-bell"></i> Riwayat Notifikasi
-            </a>
-            <a href="{{ route('kasir.settings') }}"
-               class="nav-link {{ request()->routeIs('kasir.settings') ? 'active' : '' }}">
-                <i class="bi bi-gear"></i> Pengaturan Akun
-            </a>
-        @endif
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="user-info">
-            <div class="user-avatar">{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}</div>
-            <div>
-                <div class="user-name">{{ auth()->user()->name ?? 'Pengguna' }}</div>
-                <div class="user-role">{{ auth()->user()->role ?? '-' }}</div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="btn-group btn-group-sm" role="group">
+                <a href="{{ route(auth()->user()->role . '.notifications.history', ['status' => 'all']) }}"
+                   class="btn btn-outline-secondary {{ $status === 'all' ? 'active' : '' }}">Semua</a>
+                <a href="{{ route(auth()->user()->role . '.notifications.history', ['status' => 'unread']) }}"
+                   class="btn btn-outline-secondary {{ $status === 'unread' ? 'active' : '' }}">Belum Dibaca</a>
+                <a href="{{ route(auth()->user()->role . '.notifications.history', ['status' => 'read']) }}"
+                   class="btn btn-outline-secondary {{ $status === 'read' ? 'active' : '' }}">Sudah Dibaca</a>
             </div>
-        </div>
-        <form method="POST" action="{{ route('logout') }}" id="logoutForm">
-            @csrf
-            <button type="submit" class="btn btn-sm w-100"
-                    style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.12);border-radius:8px;">
-                <i class="bi bi-box-arrow-right me-1"></i> Keluar
-            </button>
-        </form>
-    </div>
-</aside>
 
-<div id="sidebar-overlay"></div>
-
-{{-- ══ TOPBAR ══ --}}
-<header id="topbar">
-    <button id="sidebar-toggle"><i class="bi bi-list"></i></button>
-    <div class="page-title">@yield('page-title', 'Beranda')</div>
-
-    @hasSection('breadcrumb')
-        <nav aria-label="breadcrumb" class="d-none d-md-block">
-            <ol class="breadcrumb mb-0" style="font-size:.75rem;">
-                @yield('breadcrumb')
-            </ol>
-        </nav>
-    @endif
-
-    @php
-        $unreadNotifications = auth()->check()
-            ? auth()->user()->unreadNotifications()->latest()->limit(5)->get()
-            : collect();
-        $unreadCount = auth()->check() ? auth()->user()->unreadNotifications()->count() : 0;
-
-        // Dipakai untuk pop-up peringatan "tutup shift dulu sebelum logout"
-        // di tombol Keluar sidebar. Query kecil & murah (indexed by user_id),
-        // aman dipanggil di tiap page load untuk kasir.
-        $hasOpenShift = auth()->check() && auth()->user()->role === 'kasir'
-            ? \App\Models\Shift::where('user_id', auth()->id())->whereNull('closed_at')->exists()
-            : false;
-    @endphp
-
-    <div class="dropdown">
-        <a href="#" id="notif-bell" class="topbar-badge position-relative" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-bell" style="font-size:.9rem;"></i>
-            <span id="notif-badge-count"
-                  class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
-                  style="font-size:.55rem; padding:3px 5px; {{ $unreadCount > 0 ? '' : 'display:none;' }}">
-                {{ $unreadCount > 9 ? '9+' : $unreadCount }}
-            </span>
-        </a>
-        <div class="dropdown-menu dropdown-menu-end p-0" style="width:320px; max-height:400px; overflow-y:auto;">
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-                <span class="fw-semibold small">Notifikasi</span>
-                <button type="button" id="notif-mark-all" class="btn btn-link btn-sm p-0" style="font-size:.75rem; {{ $unreadCount > 0 ? '' : 'display:none;' }}">
-                    Tandai semua dibaca
-                </button>
-            </div>
-            <div id="notif-list">
-                @forelse($unreadNotifications as $notif)
-                    <div class="px-3 py-2 border-bottom small">
-                        <div class="fw-semibold">{{ $notif->data['title'] ?? 'Notifikasi' }}</div>
-                        <div class="text-muted" style="font-size:.75rem;">{{ $notif->data['message'] ?? '' }}</div>
-                        <div class="text-muted" style="font-size:.7rem;">{{ $notif->created_at->diffForHumans() }}</div>
-                    </div>
-                @empty
-                    <div class="px-3 py-4 text-center text-muted small" id="notif-empty">Tidak ada notifikasi baru</div>
-                @endforelse
-            </div>
-            <div class="text-center border-top py-2">
-                <a href="{{ route(auth()->user()->role . '.notifications.history') }}" class="small text-decoration-none">
-                    Lihat semua notifikasi
-                </a>
-            </div>
+            @if($unreadCount > 0)
+                <form method="POST" action="{{ route('notifications.readAll') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Tandai semua dibaca</button>
+                </form>
+            @endif
         </div>
     </div>
 
-    {{-- Browser memblokir bunyi apa pun (termasuk bunyi notifikasi) sampai
-         ada interaksi user pertama di halaman. Kalau owner cuma diam
-         menunggu notifikasi tanpa klik apa pun, bunyinya tidak akan pernah
-         keluar walau notifikasi tetap muncul & badge tetap update. Tombol
-         ini muncul otomatis lewat JS kalau kondisi itu terdeteksi, supaya
-         ada cara pasti buat "menyalakan" suaranya dengan satu klik. --}}
-    <a href="#" id="notif-sound-toggle" class="topbar-badge" style="display:none;" title="Aktifkan suara notifikasi">
-        <i class="bi bi-volume-mute-fill"></i>
-    </a>
-</header>
-
-{{-- ══ MAIN ══ --}}
-<main id="main-content">
-    <div class="content-inner">
-
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-4" role="alert">
-                <i class="bi bi-check-circle-fill"></i>
-                <div>{{ session('success') }}</div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-4" role="alert">
-                <i class="bi bi-exclamation-circle-fill"></i>
-                <div>{{ session('error') }}</div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <strong>Ada kesalahan input:</strong>
-                <ul class="mb-0 mt-1 ps-3">
-                    @foreach($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        @yield('content')
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Status</th>
+                        <th>Notifikasi</th>
+                        <th>Waktu</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($notifications as $i => $notif)
+                    <tr class="{{ is_null($notif->read_at) ? 'table-warning bg-opacity-25' : '' }}">
+                        <td class="text-muted small">{{ $notifications->firstItem() + $i }}</td>
+                        <td>
+                            @if(is_null($notif->read_at))
+                                <span class="badge bg-danger">Baru</span>
+                            @else
+                                <span class="badge bg-secondary">Dibaca</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="fw-semibold small">{{ $notif->data['title'] ?? 'Notifikasi' }}</div>
+                            <div class="text-muted small">{{ $notif->data['message'] ?? '' }}</div>
+                        </td>
+                        <td class="small text-muted" style="white-space:nowrap;">
+                            {{ $notif->created_at->format('d/m/Y H:i') }}
+                            <div class="text-muted" style="font-size:.7rem;">{{ $notif->created_at->diffForHumans() }}</div>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                @if(is_null($notif->read_at))
+                                    <form method="POST" action="{{ route(auth()->user()->role . '.notifications.read', $notif->id) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Tandai dibaca">
+                                            <i class="bi bi-check2"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                                <form method="POST" action="{{ route(auth()->user()->role . '.notifications.destroy', $notif->id) }}"
+                                      onsubmit="return confirm('Hapus notifikasi ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="5" class="text-center text-muted py-4">Belum ada notifikasi</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="p-3">
+            {{ $notifications->links('pagination::bootstrap-5') }}
+        </div>
     </div>
-</main>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@push('scripts')
 <script>
-    /**
-     * Konfirmasi hapus data dengan tampilan SweetAlert2 senada tema Niki Frozen.
-     * Dipanggil dari onsubmit form: onsubmit="return confirmDelete(this, 'Pesan detail...')"
-     */
-    function confirmDelete(form, text = 'ingin menghapus data ini!', title = 'Apakah Kamu Yakin?') {
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Tidak',
-            confirmButtonColor: '#7367f0',
-            cancelButtonColor: '#64748b',
-            reverseButtons: false,
-            focusCancel: true,
-            customClass: {
-                popup: 'nk-swal-popup',
-                title: 'nk-swal-title',
-                htmlContainer: 'nk-swal-text',
-                confirmButton: 'nk-swal-confirm',
-                cancelButton: 'nk-swal-cancel',
+    // ═══════════════════════════════════════════════════════════════
+    // REALTIME RIWAYAT NOTIFIKASI — polling ringan supaya user tahu ada
+    // notifikasi baru masuk selagi halaman riwayat ini terbuka, tanpa perlu
+    // reload manual buat "ngecek". Pakai endpoint /notifications/poll yang
+    // sama dengan yang dipakai lonceng notifikasi di layouts/app.blade.php.
+    //
+    // Beda dengan #productGrid di halaman POS: di sini kita SENGAJA tidak
+    // me-render ulang tabel langsung lewat JS, karena halaman ini punya
+    // paginasi, filter status (all/unread/read), dan form mark-read/hapus
+    // per baris (dengan CSRF token masing-masing) — replace DOM diam-diam
+    // berisiko menimpa state itu atau menimpa aksi yang lagi diklik user.
+    // Jadi cukup munculkan banner ringan yang minta user klik "Muat ulang".
+    // ═══════════════════════════════════════════════════════════════
+    const NOTIF_HISTORY_POLL_URL = @json(route('notifications.poll'));
+    const NOTIF_HISTORY_POLL_INTERVAL_MS = 15000; // samain dengan interval lonceng notifikasi
+    const notifHistoryBaselineUnread = {{ (int) $unreadCount }};
+
+    const notifUpdateBanner = document.getElementById('notifUpdateBanner');
+    let notifHistoryBannerShown = false;
+
+    async function pollNotifHistory() {
+        if (document.visibilityState !== 'visible') return;
+        if (notifHistoryBannerShown) return; // sudah ditawarin reload sekali, jangan spam fetch terus
+
+        try {
+            const res = await fetch(NOTIF_HISTORY_POLL_URL, {
+                headers: { 'Accept': 'application/json' },
+            });
+            if (!res.ok) return;
+
+            const data = await res.json();
+
+            // unread_count berubah (baik nambah karena notif baru, maupun
+            // berkurang karena ditandai dibaca dari tab/perangkat lain) =
+            // sinyal kalau daftar di halaman ini sudah tidak sinkron lagi.
+            if (data.unread_count !== notifHistoryBaselineUnread) {
+                notifUpdateBanner.classList.remove('d-none');
+                notifHistoryBannerShown = true;
             }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
-        return false; // cegah submit langsung, form baru submit setelah dikonfirmasi
+        } catch (e) {
+            // Diam-diam gagal (koneksi putus sesaat) — poll berikutnya coba lagi.
+        }
     }
+
+    const notifHistoryPollTimer = setInterval(pollNotifHistory, NOTIF_HISTORY_POLL_INTERVAL_MS);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') pollNotifHistory();
+    });
 </script>
-<script>
-    const sidebar   = document.getElementById('sidebar');
-    const overlay   = document.getElementById('sidebar-overlay');
-    const toggleBtn = document.getElementById('sidebar-toggle');
+@endpush
 
-    function openSidebar()  { sidebar.classList.add('open');    overlay.classList.add('show'); }
-    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
-
-    toggleBtn?.addEventListener('click', () =>
-        sidebar.classList.contains('open') ? closeSidebar() : openSidebar()
-    );
-    overlay.addEventListener('click', closeSidebar);
-</script>
-
-@auth
-<script>
-    /**
-     * Cegah kasir logout manual selagi shift masih terbuka. Ini CUMA lapis
-     * UX (feedback instan tanpa round-trip) — validasi yang sesungguhnya
-     * tetap dilakukan di server (AuthWebController::logout()), jadi tetap
-     * aman walau JS ini di-nonaktifkan atau di-bypass.
-     */
-    (function () {
-        const hasOpenShift = @json($hasOpenShift ?? false);
-        const logoutForm = document.getElementById('logoutForm');
-        if (!hasOpenShift || !logoutForm) return;
-
-        logoutForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            Swal.fire({
-                icon: 'warning',
-                title: 'Shift Masih Terbuka',
-                text: 'Kamu belum menutup shift. Tutup shift terlebih dahulu sebelum logout.',
-                showCancelButton: true,
-                confirmButtonText: 'Tutup Shift Sekarang',
-                cancelButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = @json(route('kasir.shift'));
-                }
-            });
-        });
-    })();
-</script>
-
-<script>
-    /**
-     * Polling ringan untuk notifikasi real-time (badge lonceng Owner/Kasir).
-     * Tidak pakai WebSocket/Pusher/Reverb — cukup fetch() ke endpoint
-     * /notifications/poll setiap POLL_INTERVAL_MS. Ini dipilih karena volume
-     * notifikasi toko frozen food (transaksi QRIS, selisih kas) rendah,
-     * jadi delay beberapa detik dari polling tidak masalah dan jauh lebih
-     * sederhana untuk dijalankan tanpa infrastruktur tambahan (server WebSocket,
-     * queue worker, dsb) di hosting seadanya seperti Railway/XAMPP.
-     */
-    (function () {
-        const POLL_INTERVAL_MS = 15000; // 15 detik — cukup terasa "real-time" tanpa membebani server
-        const pollUrl   = @json(route('notifications.poll'));
-        const readAllUrl = @json(route('notifications.readAll'));
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-
-        const badgeEl    = document.getElementById('notif-badge-count');
-        const listEl     = document.getElementById('notif-list');
-        const markAllBtn = document.getElementById('notif-mark-all');
-
-        let lastSeenId = null;   // ID notifikasi terbaru yang sudah "diketahui" (untuk deteksi notifikasi baru)
-        let isFirstPoll = true;  // supaya toast tidak muncul untuk notifikasi lama saat page pertama kali load
-        let pollTimer   = null;
-
-        function renderList(notifications) {
-            if (!notifications.length) {
-                listEl.innerHTML = '<div class="px-3 py-4 text-center text-muted small">Tidak ada notifikasi baru</div>';
-                return;
-            }
-            listEl.innerHTML = notifications.map(n => `
-                <div class="px-3 py-2 border-bottom small">
-                    <div class="fw-semibold">${escapeHtml(n.title)}</div>
-                    <div class="text-muted" style="font-size:.75rem;">${escapeHtml(n.message)}</div>
-                    <div class="text-muted" style="font-size:.7rem;">${escapeHtml(n.created_at)}</div>
-                </div>
-            `).join('');
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str ?? '';
-            return div.innerHTML;
-        }
-
-        function updateBadge(count) {
-            if (count > 0) {
-                badgeEl.textContent = count > 9 ? '9+' : count;
-                badgeEl.style.display = '';
-                markAllBtn.style.display = '';
-            } else {
-                badgeEl.style.display = 'none';
-                markAllBtn.style.display = 'none';
-            }
-        }
-
-        function showToast(notif) {
-            if (typeof Swal === 'undefined') return;
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'info',
-                title: notif.title,
-                text: notif.message,
-                showConfirmButton: false,
-                timer: 6000,
-                timerProgressBar: true,
-            });
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // BUNYI NOTIFIKASI — pakai Web Audio API (oscillator dua nada, "ding"),
-        // bukan file audio eksternal — supaya tidak perlu tambah aset/asset
-        // pipeline baru cuma untuk satu suara pendek, dan tetap konsisten
-        // dengan filosofi "tanpa infrastruktur tambahan" di file ini.
-        //
-        // AudioContext baru bisa dipakai setelah ada interaksi user (klik,
-        // keyboard, atau tap layar) — kebijakan autoplay browser modern
-        // memblokir audio yang diputar sebelum itu terjadi SAMA SEKALI di
-        // halaman ini. Kalau owner cuma membuka dashboard lalu diam
-        // menunggu notifikasi tanpa menyentuh apa pun, bunyinya tidak akan
-        // keluar meski notifikasi & badge tetap ter-update seperti biasa —
-        // ini batasan browser, bukan bug. Makanya disediakan dua jalur:
-        //   1) Auto-unlock diam-diam begitu user klik/ketik/tap apa saja.
-        //   2) Kalau setelah beberapa detik belum ke-unlock otomatis
-        //      (berarti user belum sempat berinteraksi sama sekali),
-        //      tombol #notif-sound-toggle di sebelah lonceng dimunculkan
-        //      supaya ada cara pasti buat menyalakan suaranya.
-        // ═══════════════════════════════════════════════════════════════
-        let notifAudioCtx = null;
-        const soundToggleEl = document.getElementById('notif-sound-toggle');
-
-        function isAudioUnlocked() {
-            return !!notifAudioCtx && notifAudioCtx.state === 'running';
-        }
-
-        function tryUnlockNotifAudio() {
-            if (!notifAudioCtx) {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (AudioCtx) notifAudioCtx = new AudioCtx();
-            }
-            if (notifAudioCtx && notifAudioCtx.state === 'suspended') {
-                notifAudioCtx.resume();
-            }
-            if (isAudioUnlocked() && soundToggleEl) {
-                soundToggleEl.style.display = 'none';
-            }
-        }
-
-        ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(evt => {
-            document.addEventListener(evt, tryUnlockNotifAudio, { passive: true });
-        });
-
-        // Baru ditawarkan lewat tombol kalau 2.5 detik setelah halaman
-        // dimuat ternyata masih belum ke-unlock secara otomatis — dikasih
-        // jeda dulu supaya tidak "kedip" muncul-hilang kalau user memang
-        // langsung klik sesuatu begitu halaman selesai load.
-        setTimeout(() => {
-            if (soundToggleEl && !isAudioUnlocked()) {
-                soundToggleEl.style.display = '';
-            }
-        }, 2500);
-
-        soundToggleEl?.addEventListener('click', function (e) {
-            e.preventDefault();
-            tryUnlockNotifAudio();
-            playNotificationSound(); // bunyi konfirmasi supaya user tahu sudah aktif
-            soundToggleEl.style.display = 'none';
-        });
-
-        function playNotificationSound() {
-            if (!isAudioUnlocked()) return;
-
-            const now = notifAudioCtx.currentTime;
-
-            // Dua nada pendek naik (mis. C6 → E6) — pola "ding" umum, singkat
-            // dan tidak mengganggu kalau notifikasi datang beruntun.
-            [{ freq: 1046.5, start: 0 }, { freq: 1318.5, start: 0.11 }].forEach(({ freq, start }) => {
-                const osc  = notifAudioCtx.createOscillator();
-                const gain = notifAudioCtx.createGain();
-
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-
-                gain.gain.setValueAtTime(0, now + start);
-                gain.gain.linearRampToValueAtTime(0.15, now + start + 0.01); // volume rendah, tidak mengagetkan
-                gain.gain.exponentialRampToValueAtTime(0.001, now + start + 0.2);
-
-                osc.connect(gain);
-                gain.connect(notifAudioCtx.destination);
-
-                osc.start(now + start);
-                osc.stop(now + start + 0.22);
-            });
-        }
-
-        async function poll() {
-            // Jangan polling kalau tab sedang tidak aktif/di-minimize — hemat
-            // request, dan begitu tab aktif lagi ada listener terpisah di
-            // bawah yang langsung polling ulang supaya tetap terasa real-time.
-            if (document.visibilityState !== 'visible') return;
-
-            try {
-                const res = await fetch(pollUrl, {
-                    headers: { 'Accept': 'application/json' },
-                });
-                if (!res.ok) return;
-
-                const data = await res.json();
-                updateBadge(data.unread_count);
-                renderList(data.notifications);
-
-                const newestId = data.notifications[0]?.id ?? null;
-
-                if (!isFirstPoll && newestId && newestId !== lastSeenId) {
-                    showToast(data.notifications[0]);
-                    playNotificationSound();
-                }
-
-                if (newestId) lastSeenId = newestId;
-                isFirstPoll = false;
-            } catch (e) {
-                // Diam-diam gagal (mis. koneksi putus sesaat) — polling
-                // berikutnya akan coba lagi otomatis, tidak perlu ganggu user.
-            }
-        }
-
-        markAllBtn?.addEventListener('click', async () => {
-            try {
-                await fetch(readAllUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
-                });
-            } finally {
-                poll(); // langsung refresh badge & dropdown ke kondisi "0 unread"
-            }
-        });
-
-        // Polling langsung sesaat setelah page load, lalu berkala.
-        poll();
-        pollTimer = setInterval(poll, POLL_INTERVAL_MS);
-
-        // Begitu user kembali ke tab ini, langsung poll ulang supaya tidak
-        // perlu menunggu interval berikutnya untuk lihat notifikasi terbaru.
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') poll();
-        });
-    })();
-</script>
-@endauth
-
-@stack('scripts')
-</body>
-</html>
+@endsection
