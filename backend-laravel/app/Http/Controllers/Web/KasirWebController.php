@@ -37,7 +37,7 @@ class KasirWebController extends Controller
         }
 
         $products = Product::with('stock')
-            ->where('branch_id', session('branch_id'))
+            ->where('branch_id', Auth::user()->branch_id)
             ->get();
 
         $taxPercent = (float) Setting::get('tax_percent', 0);
@@ -60,7 +60,7 @@ class KasirWebController extends Controller
     public function productsPoll()
     {
         $products = Product::with('stock')
-            ->where('branch_id', session('branch_id'))
+            ->where('branch_id', Auth::user()->branch_id)
             ->get()
             ->map(fn ($p) => [
                 'id'        => $p->id,
@@ -100,7 +100,7 @@ class KasirWebController extends Controller
             $discount = DiscountCode::validateForCheckout(
                 $request->code,
                 (float) $request->subtotal,
-                session('branch_id')
+                Auth::user()->branch_id
             );
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
@@ -226,7 +226,7 @@ class KasirWebController extends Controller
                     $discountCode = DiscountCode::validateForCheckout(
                         $request->discount_code,
                         $total,
-                        session('branch_id'),
+                        Auth::user()->branch_id,
                         lock: true
                     );
                     $discountAmount = $discountCode->calculateDiscountAmount($total);
@@ -264,7 +264,7 @@ class KasirWebController extends Controller
                     'invoice_number'   => $this->generateInvoiceNumber(),
                     'client_txn_id'    => $request->client_txn_id,
                     'user_id'          => Auth::id(),
-                    'branch_id'        => session('branch_id'),
+                    'branch_id'        => Auth::user()->branch_id,
                     'shift_id'         => $shift->id,
                     'discount_code_id' => $discountCode?->id,
                     'subtotal'         => $total,
@@ -463,7 +463,7 @@ class KasirWebController extends Controller
 
         Shift::create([
             'user_id'      => Auth::id(),
-            'branch_id'    => session('branch_id'),
+            'branch_id'    => Auth::user()->branch_id,
             'opening_cash' => $request->opening_cash,
             'status'       => 'aktif',
             'opened_at'    => now(),
