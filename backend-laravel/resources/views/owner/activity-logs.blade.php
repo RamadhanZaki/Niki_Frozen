@@ -68,9 +68,14 @@
 </div>
 
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white border-0 pt-3">
-        <span class="fw-semibold">Jejak Aktivitas Sistem</span>
-        <span class="text-muted small">({{ $logs->total() }} aktivitas ditemukan)</span>
+    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <span class="fw-semibold">Jejak Aktivitas Sistem</span>
+            <span class="text-muted small">({{ $logs->total() }} aktivitas ditemukan)</span>
+        </div>
+        <a href="{{ route('owner.activityLogs.export', request()->query()) }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
     </div>
 
     <div class="card-body p-0">

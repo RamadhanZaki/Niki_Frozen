@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::delete('/discounts/{discount}',   [OwnerWebController::class, 'destroyDiscount'])->name('discounts.destroy');
 
     Route::get('/activity-logs',                [ActivityLogWebController::class, 'index'])->name('activityLogs');
+    Route::get('/activity-logs/export',         [ActivityLogWebController::class, 'exportCsv'])->name('activityLogs.export');
 
     Route::get('/users',                        [OwnerWebController::class, 'users'])->name('users');
     Route::post('/users',                       [OwnerWebController::class, 'storeUser'])->name('users.store');
