@@ -39,6 +39,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::delete('/branches/{branch}',[OwnerWebController::class, 'destroyBranch'])->name('branches.destroy');
 
     Route::get('/shifts',              [OwnerWebController::class, 'shifts'])->name('shifts');
+    Route::get('/shifts/poll',         [OwnerWebController::class, 'shiftsPoll'])->name('shifts.poll');
 
     Route::get('/notifications',                [NotificationWebController::class, 'history'])->name('notifications.history');
     Route::post('/notifications/{notification}/read', [NotificationWebController::class, 'markRead'])->name('notifications.read');

@@ -632,6 +632,45 @@ class OwnerWebController extends Controller
         return view('owner.shifts', compact('shifts'));
     }
 
+    /**
+     * Polling ringan untuk halaman Shifts — pola yang sama dengan
+     * dashboardPoll()/stocksPoll(). Angka total_sales/total_cash_sales/
+     * total_qris_sales/total_transactions di tabel Shift SUDAH di-increment
+     * live saat checkout() (lihat KasirWebController), jadi data di DB-nya
+     * memang sudah realtime — yang belum realtime cuma tampilan browser
+     * Owner yang butuh reload manual buat lihatnya. Endpoint ini isinya
+     * cuma "kirim ulang apa yang sudah ada di DB", tidak menghitung apa-apa.
+     */
+    public function shiftsPoll(Request $request)
+    {
+        // paginate() otomatis baca ?page= dari $request->query('page'), jadi
+        // halaman yang lagi dibuka Owner tetap konsisten begitu di-poll ulang.
+        $shifts = Shift::with(['user', 'branch'])->latest()->paginate(15);
+
+        $rows = $shifts->getCollection()->values()->map(function ($s, $i) use ($shifts) {
+            return [
+                'no'          => $shifts->firstItem() + $i,
+                'kasir'       => $s->user?->name ?? '-',
+                'cabang'      => $s->branch?->name ?? '-',
+                'opened_at'   => \Carbon\Carbon::parse($s->opened_at)->format('d/m/Y H:i'),
+                'closed_at'   => $s->closed_at ? \Carbon\Carbon::parse($s->closed_at)->format('d/m/Y H:i') : null,
+                'opening_cash'      => (float) $s->opening_cash,
+                'total_cash_sales'  => (float) $s->total_cash_sales,
+                'total_qris_sales'  => (float) $s->total_qris_sales,
+                'total_sales'       => (float) $s->total_sales,
+                'total_transactions'=> $s->total_transactions,
+                'difference'        => is_null($s->difference) ? null : (float) $s->difference,
+                'status'            => $s->status,
+            ];
+        })->values();
+
+        return response()->json([
+            'rows'         => $rows,
+            'current_page' => $shifts->currentPage(),
+            'last_page'    => $shifts->lastPage(),
+        ]);
+    }
+
     // ─── Settings ───────────────────────────────────────────────────
     public function settings()
     {
