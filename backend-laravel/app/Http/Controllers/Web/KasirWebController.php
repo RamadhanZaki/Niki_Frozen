@@ -78,6 +78,7 @@ class KasirWebController extends Controller
                 'category'  => $p->category,
                 'price'     => (float) $p->price,
                 'stock'     => $p->stock?->quantity ?? 0,
+                'minStock'  => $p->stock?->min_stock ?? 10,
                 'image_url' => $p->image_url,
             ])
             ->values();

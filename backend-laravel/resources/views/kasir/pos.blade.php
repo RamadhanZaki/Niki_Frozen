@@ -4,6 +4,41 @@
 
 @section('content')
 
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body py-2 px-3">
+                <div class="text-muted small">Transaksi Hari Ini</div>
+                <div class="fw-bold fs-5">{{ $ringkasanHariIni->jumlah_transaksi }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body py-2 px-3">
+                <div class="text-muted small">Omzet Hari Ini</div>
+                <div class="fw-bold fs-5">Rp {{ number_format($ringkasanHariIni->omzet, 0, ',', '.') }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body py-2 px-3">
+                <div class="text-muted small">Penjualan Shift Ini</div>
+                <div class="fw-bold fs-5">Rp {{ number_format($shift->total_sales, 0, ',', '.') }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body py-2 px-3">
+                <div class="text-muted small">Shift Dibuka Sejak</div>
+                <div class="fw-bold fs-6">{{ \Carbon\Carbon::parse($shift->opened_at)->format('H:i') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="d-flex justify-content-end mb-2">
     <span id="connStatus" class="badge rounded-pill text-bg-success">
         <i class="bi bi-wifi"></i> Online
@@ -24,7 +59,11 @@
 
         <div class="row g-3" id="productGrid">
             @forelse($products as $p)
-            @php $qty = $p->stock?->quantity ?? 0; @endphp
+            @php
+                $qty = $p->stock?->quantity ?? 0;
+                $minStock = $p->stock?->min_stock ?? 10;
+                $isLow = $qty > 0 && $qty <= $minStock;
+            @endphp
             <div class="col-6 col-md-4 product-item" data-name="{{ strtolower($p->name) }}">
                 <div class="card border-0 shadow-sm h-100 {{ $qty <= 0 ? 'opacity-50' : '' }}">
                     <div class="card-body text-center p-3">
@@ -34,7 +73,14 @@
                         <div class="fw-semibold small mb-1">{{ $p->name }}</div>
                         <div class="text-muted" style="font-size:.7rem;">{{ $p->category }}</div>
                         <div class="fw-bold text-primary mb-2">Rp {{ number_format($p->price, 0, ',', '.') }}</div>
-                        <div class="small text-muted mb-2">Stok: {{ $qty }}</div>
+                        <div class="small text-muted mb-2">
+                            Stok: {{ $qty }}
+                            @if($isLow)
+                                <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem;">Menipis</span>
+                            @elseif($qty <= 0)
+                                <span class="badge bg-danger ms-1" style="font-size:.6rem;">Habis</span>
+                            @endif
+                        </div>
 
                         <button type="button" class="btn btn-sm btn-dark w-100"
                             {{ $qty <= 0 ? 'disabled' : '' }}
@@ -507,6 +553,10 @@
 
     function productCardHtml(p) {
         const outOfStock = p.stock <= 0;
+        const isLow = p.stock > 0 && p.stock <= (p.minStock ?? 10);
+        const stockBadge = isLow
+            ? '<span class="badge bg-warning text-dark ms-1" style="font-size:.6rem;">Menipis</span>'
+            : (outOfStock ? '<span class="badge bg-danger ms-1" style="font-size:.6rem;">Habis</span>' : '');
         const productJson = escapeForAttr(JSON.stringify({ id: p.id, name: p.name, price: p.price, stock: p.stock }));
         return `
             <div class="col-6 col-md-4 product-item" data-name="${escapeHtmlPos(p.name.toLowerCase())}" id="product-card-${p.id}">
@@ -518,7 +568,7 @@
                         <div class="fw-semibold small mb-1">${escapeHtmlPos(p.name)}</div>
                         <div class="text-muted" style="font-size:.7rem;">${escapeHtmlPos(p.category)}</div>
                         <div class="fw-bold text-primary mb-2">${formatRp(p.price)}</div>
-                        <div class="small text-muted mb-2">Stok: ${p.stock}</div>
+                        <div class="small text-muted mb-2">Stok: ${p.stock}${stockBadge}</div>
 
                         <button type="button" class="btn btn-sm btn-dark w-100"
                             ${outOfStock ? 'disabled' : ''}
