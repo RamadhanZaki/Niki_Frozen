@@ -342,10 +342,28 @@ function openProductModal(data = null) {
     productModal.show();
 }
 
-// Preview gambar saat user pilih file baru
+// Preview gambar saat user pilih file baru — sekaligus validasi ukuran
+// SEBELUM form di-submit, supaya kalau file kelebihan ukuran, Owner langsung
+// tahu saat itu juga (bukan setelah submit dan nunggu balasan server).
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB, samakan dengan rule 'max:2048' di server
+
 document.getElementById('f_image').addEventListener('change', function (e) {
-    const file = e.target.files[0];
+    const input = e.target;
+    const file = input.files[0];
     if (!file) return;
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        const sizeMb = (file.size / 1024 / 1024).toFixed(2);
+        Swal.fire({
+            icon: 'warning',
+            title: 'Ukuran Gambar Terlalu Besar',
+            text: `File yang dipilih berukuran ${sizeMb} MB, maksimal 2 MB. Silakan pilih file lain.`,
+        });
+        input.value = ''; // reset supaya "Choose File" kembali kosong
+        document.getElementById('f_preview').src = "{{ asset('images/no-product.svg') }}";
+        return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
         document.getElementById('f_preview').src = ev.target.result;
