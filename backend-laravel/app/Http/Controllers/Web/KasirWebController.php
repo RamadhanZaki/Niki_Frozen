@@ -14,6 +14,7 @@ use App\Models\TransactionDetail;
 use App\Models\User;
 use App\Notifications\CashDifferenceNotification;
 use App\Notifications\QrisPaymentNotification;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -472,13 +473,15 @@ class KasirWebController extends Controller
             return back()->with('error', 'Anda sudah memiliki shift yang aktif.');
         }
 
-        Shift::create([
+        $shift = Shift::create([
             'user_id'      => Auth::id(),
             'branch_id'    => Auth::user()->branch_id,
             'opening_cash' => $request->opening_cash,
             'status'       => 'aktif',
             'opened_at'    => now(),
         ]);
+
+        ActivityLogger::log('shift_opened', 'Membuka shift dengan kas awal Rp'.number_format($shift->opening_cash, 0, ',', '.').'.', $shift, branchId: $shift->branch_id);
 
         return redirect()->route('kasir.pos')->with('success', 'Shift berhasil dibuka. Selamat berjualan!');
     }
@@ -517,6 +520,12 @@ class KasirWebController extends Controller
             if ($owners->isNotEmpty()) {
                 Notification::send($owners, new CashDifferenceNotification($shift->fresh(['user', 'branch'])));
             }
+        }
+
+        ActivityLogger::log('shift_closed', 'Menutup shift dengan kas akhir Rp'.number_format($request->closing_cash, 0, ',', '.').'.', $shift, ['expected' => $expected, 'actual' => $request->closing_cash, 'difference' => $difference], $shift->branch_id);
+
+        if (abs($difference) > 5000) {
+            ActivityLogger::log('shift_cash_difference', 'Selisih kas shift sebesar Rp'.number_format(abs($difference), 0, ',', '.').' ('.($difference < 0 ? 'kurang' : 'lebih').').', $shift, ['difference' => $difference], $shift->branch_id);
         }
 
         return redirect()->route('kasir.shift')->with('success', 'Shift berhasil ditutup.');

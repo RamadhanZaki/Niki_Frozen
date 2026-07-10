@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\DiscountCode;
 use App\Notifications\PasswordResetByOwnerNotification;
 use App\Notifications\ProductChangedNotification;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -197,6 +198,8 @@ class OwnerWebController extends Controller
 
         $this->notifyActiveKasirAboutProduct($product->branch_id, 'added', $product->name, $product);
 
+        ActivityLogger::log('product_created', "Menambahkan produk {$product->name}.", $product, branchId: $product->branch_id);
+
         return redirect()->route('owner.products')->with('success', 'Produk berhasil ditambahkan.');
     }
 
@@ -257,6 +260,8 @@ class OwnerWebController extends Controller
             $this->notifyActiveKasirAboutProduct($product->branch_id, 'updated', $product->name, $product);
         }
 
+        ActivityLogger::log('product_updated', "Mengubah produk {$product->name}.", $product, branchId: $product->branch_id);
+
         return redirect()->route('owner.products')->with('success', 'Produk berhasil diperbarui.');
     }
 
@@ -278,6 +283,8 @@ class OwnerWebController extends Controller
         // POS mereka, dan supaya keranjang yang kebetulan sudah berisi produk
         // ini bisa langsung dibersihkan otomatis di sisi client.
         $this->notifyActiveKasirAboutProduct($branchId, 'deleted', $name);
+
+        ActivityLogger::log('product_deleted', "Menghapus produk {$name}.", branchId: $branchId);
 
         return redirect()->route('owner.products')->with('success', "{$name} berhasil dihapus.");
     }
@@ -463,6 +470,15 @@ class OwnerWebController extends Controller
             'note'         => $request->note,
         ]);
 
+        $verb = $request->type === 'add' ? 'Menambah' : 'Mengurangi';
+        ActivityLogger::log(
+            'stock_adjusted',
+            "{$verb} stok {$product->name} sebanyak {$request->quantity} ({$before} → {$stock->quantity}).",
+            $product,
+            ['before' => $before, 'after' => $stock->quantity, 'type' => $request->type, 'note' => $request->note],
+            $stock->branch_id
+        );
+
         return redirect()->route('owner.stocks')->with('success', 'Stok berhasil disesuaikan.');
     }
 
@@ -596,7 +612,9 @@ class OwnerWebController extends Controller
             'phone'   => 'nullable|string|max:20',
         ]);
 
-        Branch::create($request->only('name', 'address', 'phone'));
+        $branch = Branch::create($request->only('name', 'address', 'phone'));
+
+        ActivityLogger::log('branch_created', "Menambahkan cabang {$branch->name}.", $branch, branchId: $branch->id);
 
         return redirect()->route('owner.branches')->with('success', 'Cabang berhasil ditambahkan.');
     }
@@ -611,6 +629,8 @@ class OwnerWebController extends Controller
 
         $branch->update($request->only('name', 'address', 'phone'));
 
+        ActivityLogger::log('branch_updated', "Mengubah cabang {$branch->name}.", $branch, branchId: $branch->id);
+
         return redirect()->route('owner.branches')->with('success', 'Cabang berhasil diperbarui.');
     }
 
@@ -620,7 +640,10 @@ class OwnerWebController extends Controller
             return back()->with('error', 'Cabang tidak dapat dihapus karena masih memiliki data terkait.');
         }
 
+        $name = $branch->name;
         $branch->delete();
+
+        ActivityLogger::log('branch_deleted', "Menghapus cabang {$name}.");
 
         return redirect()->route('owner.branches')->with('success', 'Cabang berhasil dihapus.');
     }
@@ -698,6 +721,8 @@ class OwnerWebController extends Controller
         foreach (['store_name', 'store_address', 'store_phone', 'tax_percent', 'receipt_note'] as $key) {
             Setting::set($key, $request->input($key));
         }
+
+        ActivityLogger::log('settings_updated', 'Mengubah pengaturan toko.');
 
         return redirect()->route('owner.settings')->with('success', 'Pengaturan berhasil disimpan.');
     }
@@ -784,7 +809,7 @@ class OwnerWebController extends Controller
             return back()->withInput()->with('error', 'Nilai diskon persen tidak boleh lebih dari 100%.');
         }
 
-        DiscountCode::create([
+        $discount = DiscountCode::create([
             'code'         => strtoupper($data['code']),
             'type'         => $data['type'],
             'value'        => $data['value'],
@@ -797,6 +822,8 @@ class OwnerWebController extends Controller
             'is_active'    => $request->boolean('is_active', true),
             'created_by'   => Auth::id(),
         ]);
+
+        ActivityLogger::log('discount_created', "Membuat kode diskon {$discount->code}.", $discount, branchId: $discount->branch_id);
 
         return redirect()->route('owner.discounts')->with('success', "Kode diskon {$data['code']} berhasil dibuat.");
     }
@@ -832,6 +859,8 @@ class OwnerWebController extends Controller
             'is_active'    => $request->boolean('is_active', true),
         ]);
 
+        ActivityLogger::log('discount_updated', "Mengubah kode diskon {$discount->code}.", $discount, branchId: $discount->branch_id);
+
         return redirect()->route('owner.discounts')->with('success', "Kode diskon {$data['code']} berhasil diperbarui.");
     }
 
@@ -846,7 +875,10 @@ class OwnerWebController extends Controller
             return back()->with('error', 'Kode diskon tidak dapat dihapus karena sudah pernah dipakai di transaksi.');
         }
 
+        $code = $discount->code;
         $discount->delete();
+
+        ActivityLogger::log('discount_deleted', "Menghapus kode diskon {$code}.");
 
         return redirect()->route('owner.discounts')->with('success', 'Kode diskon berhasil dihapus.');
     }
@@ -886,7 +918,7 @@ class OwnerWebController extends Controller
             'status'    => 'in:aktif,nonaktif',
         ]);
 
-        User::create([
+        $newUser = User::create([
             'name'      => $request->name,
             'email'     => $request->email,
             'password'  => Hash::make($request->password),
@@ -894,6 +926,8 @@ class OwnerWebController extends Controller
             'branch_id' => $request->branch_id ?: null,
             'status'    => $request->status ?? 'aktif',
         ]);
+
+        ActivityLogger::log('user_created', "Menambahkan kasir {$newUser->name}.", $newUser, branchId: $newUser->branch_id);
 
         return redirect()->route('owner.users')->with('success', 'Kasir berhasil ditambahkan.');
     }
@@ -918,6 +952,8 @@ class OwnerWebController extends Controller
             'status'    => $request->status ?? $user->status,
         ]);
 
+        ActivityLogger::log('user_updated', "Mengubah data kasir {$user->name}.", $user, branchId: $user->branch_id);
+
         return redirect()->route('owner.users')->with('success', 'Data kasir berhasil diperbarui.');
     }
 
@@ -941,6 +977,8 @@ class OwnerWebController extends Controller
         // sedang aktif).
         $user->notify(new PasswordResetByOwnerNotification($request->user()));
 
+        ActivityLogger::log('user_password_reset', "Mereset password kasir {$user->name}.", $user, branchId: $user->branch_id);
+
         return redirect()->route('owner.users')->with('success', "Password untuk {$user->name} berhasil direset.");
     }
 
@@ -950,9 +988,12 @@ class OwnerWebController extends Controller
             return back()->with('error', 'Hanya akun kasir yang dapat dihapus dari halaman ini.');
         }
 
-        $name = $user->name;
+        $name     = $user->name;
+        $branchId = $user->branch_id;
         $user->tokens()->delete();
         $user->delete();
+
+        ActivityLogger::log('user_deleted', "Menghapus kasir {$name}.", branchId: $branchId);
 
         return redirect()->route('owner.users')->with('success', "{$name} berhasil dihapus.");
     }

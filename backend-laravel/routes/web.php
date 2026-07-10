@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\AuthWebController;
 use App\Http\Controllers\Web\OwnerWebController;
 use App\Http\Controllers\Web\KasirWebController;
 use App\Http\Controllers\Web\NotificationWebController;
+use App\Http\Controllers\Web\ActivityLogWebController;
 
 // ─── Auth ───────────────────────────────────────────
 Route::get('/',        [AuthWebController::class, 'showLogin'])->name('login');
@@ -55,6 +56,8 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::post('/discounts',                [OwnerWebController::class, 'storeDiscount'])->name('discounts.store');
     Route::put('/discounts/{discount}',      [OwnerWebController::class, 'updateDiscount'])->name('discounts.update');
     Route::delete('/discounts/{discount}',   [OwnerWebController::class, 'destroyDiscount'])->name('discounts.destroy');
+
+    Route::get('/activity-logs',                [ActivityLogWebController::class, 'index'])->name('activityLogs');
 
     Route::get('/users',                        [OwnerWebController::class, 'users'])->name('users');
     Route::post('/users',                       [OwnerWebController::class, 'storeUser'])->name('users.store');

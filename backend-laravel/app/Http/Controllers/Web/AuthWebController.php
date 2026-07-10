@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Shift;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -49,6 +50,8 @@ class AuthWebController extends Controller
 
         $request->session()->regenerate();
 
+        ActivityLogger::log('login', "{$user->name} login ke sistem.", branchId: $user->branch_id);
+
         return $this->redirectByRole($user->role);
     }
 
@@ -78,6 +81,10 @@ class AuthWebController extends Controller
             if ($hasOpenShift) {
                 return back()->with('error', 'Shift kamu masih terbuka. Tutup shift terlebih dahulu sebelum logout.');
             }
+        }
+
+        if ($user) {
+            ActivityLogger::log('logout', "{$user->name} logout dari sistem.", branchId: $user->branch_id);
         }
 
         Auth::logout();

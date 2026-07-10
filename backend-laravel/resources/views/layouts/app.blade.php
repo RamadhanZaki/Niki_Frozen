@@ -383,6 +383,10 @@
                class="nav-link {{ request()->routeIs('owner.notifications.history') ? 'active' : '' }}">
                 <i class="bi bi-bell"></i> Riwayat Notifikasi
             </a>
+            <a href="{{ route('owner.activityLogs') }}"
+               class="nav-link {{ request()->routeIs('owner.activityLogs') ? 'active' : '' }}">
+                <i class="bi bi-journal-text"></i> Riwayat Aktivitas
+            </a>
 
             <div class="nav-label">Laporan & Sistem</div>
             <a href="{{ route('owner.reports') }}"
