@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Support\ImageConverter;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Models\Setting;
@@ -184,7 +185,11 @@ class OwnerWebController extends Controller
         $data['category'] = trim($data['category']);
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('products', 'public');
+            try {
+                $data['image'] = ImageConverter::toWebp($request->file('image'), 'products');
+            } catch (\RuntimeException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
         }
 
         $product = Product::create($data);
@@ -226,11 +231,19 @@ class OwnerWebController extends Controller
         $oldBranchId = $product->branch_id;
 
         if ($request->hasFile('image')) {
-            // Hapus gambar lama kalau ada, lalu simpan yang baru
+            try {
+                $newImage = ImageConverter::toWebp($request->file('image'), 'products');
+            } catch (\RuntimeException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+
+            // Hapus gambar lama SETELAH konversi baru berhasil (bukan sebelum)
+            // — supaya kalau konversinya gagal, gambar lama tidak ikut hilang
+            // sia-sia dan produk tidak berakhir tanpa gambar sama sekali.
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
             }
-            $data['image'] = $request->file('image')->store('products', 'public');
+            $data['image'] = $newImage;
         }
 
         $product->update($data);
